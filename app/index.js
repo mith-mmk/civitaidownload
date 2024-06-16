@@ -4,13 +4,6 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-function getLoras(opt) {
-  // filter "LORA", "LyCORIS", "DoRA"
-  // opt {
-  //   ",
-  //   "data": {}
-  
-}
 
 app.get('/', (req, res) => {
   // rootの場合は ../static/index.html を返す 
