@@ -1,5 +1,4 @@
 /* eslint-disable no-undef */
-const config = {};
 const civitaiUrl = 'https://civitai.com';
 
 // eslint-disable-next-line no-unused-vars
@@ -52,7 +51,7 @@ async function getLoras(opt) {
   const max_number = opt.max_number || 100;
 
   const types = loraType.map((type) => `types=${type}`).join('&');
-  const tag = tags.length == 0 ? '' : '&' + tags.map((tag) => `tags=${tag}`).join('&');
+  const tag = tags.length == 0 ? '' : '&' + tags.map((tag) => `tag=${tag}`).join('&');
   const payload = {
     sort: sort,
     period: period,
@@ -67,7 +66,7 @@ async function getLoras(opt) {
 
   const items = [];
   const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
-  console.log('fetch url:');
+  console.log('fetch url:' + url);
   const data = await getPage(url);
   console.log('fetch data:');
   const metadata = data.metadata;
@@ -107,12 +106,16 @@ function createHtmlFromItems(items) {
     const url = modelVersion.downloadUrl;
     const imageUrl = modelVersion.images[0].url;
     const trainedWords = modelVersion.trainedWords || [];
-    return `
-      <div class="item">
+    const createdAt = modelVersion.createdAt;
+    let html = `
+      <div class="item">`
+    
+    html += `
         <div class="inner">
         <a href="${url}" target="_blank">
           <h2>${item.name}</h2>
         </a>
+          <div>version ${modelVersion.name} Created at: ${createdAt}</div>
           <div class="tags">${item.tags.join(', ')}</div>
           <details>
           <summary>Trained Words</summary>
@@ -125,9 +128,35 @@ function createHtmlFromItems(items) {
             </details>
           </div>
           <img src="${imageUrl}" style="width: 80%" />
+        </div>`;
+    const modelVersions = item.modelVersions;
+    for(let i = 1; i < modelVersions.length; i++) {
+      const modelVersion = modelVersions[i];
+      const name = modelVersion.name;
+      const createdAt = modelVersion.createdAt;
+      const url = modelVersion.downloadUrl;
+      const trainedWords = modelVersion.trainedWords || [];
+      html += `
+      <div class="other-version">
+        <details>
+        <summary>Model Version ${name}</summary>
+        <div class="inner">
+          <a href="${url}" target="_blank">${name}</h2></a>
+          <div>version ${name} Created at: ${createdAt}</div>
+          <div class="tags">${item.tags.join(', ')}</div>
+          <details>
+          <summary>Trained Words</summary>
+          <div class="trainWords">${trainedWords.join('<br>')}</div>
+          </details>
         </div>
+        <details>
+      </div>`;
+    }
+      
+    html += `
       </div>
     `;
+    return html;
   }).join('');
 
   return html;

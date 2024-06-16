@@ -1,4 +1,5 @@
 const fs = require('fs');
+const config = require('./data/config.json');
 const civitai = require('./app/civitai.js');
 
 console.log('makehtml.js');
@@ -11,6 +12,9 @@ async function run() {
     return;
   }
   const opt = argMapper(process.argv.slice(2)) || {query: 'fate', max_number: 10};
+  if (config.apiKey) {
+    opt.apiKey = config.apiKey;
+  }
 
   const html = await civitai.createHtml(opt);
   const filebase = opt.query || 'loras';
