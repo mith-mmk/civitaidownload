@@ -1,0 +1,12 @@
+{
+  "apiKey": "your-api-key",
+  "loraType": ["LORA", "LoCon", "DoRA"],
+  "defaultModelTypes": ["Pony", "SDXL 1.0", "SD 1.5"],
+  "lora": {
+    "dir": "/opt/ai/models/lora",
+    "hashfile": "./data/lora-hash.json"
+  },
+  "db": {
+    "sqlite": "./data/db.sqlite3"
+  }
+}
