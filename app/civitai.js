@@ -66,7 +66,7 @@ async function getLoras(opt) {
 
   const items = [];
   const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
-  console.log('fetch url:' + url);
+  console.log('fetch url:');
   const data = await getPage(url);
   console.log('fetch data:');
   const metadata = data.metadata;
@@ -105,8 +105,8 @@ function createHtmlFromItems(items) {
     const modelVersion = item.modelVersions[0];
     const url = modelVersion.downloadUrl;
     const imageUrl = modelVersion.images[0].url;
+    const publishedAt = new Date(modelVersion.publishedAt).toLocaleString();
     const trainedWords = modelVersion.trainedWords || [];
-    const createdAt = modelVersion.createdAt;
     let html = `
       <div class="item">`
     
@@ -115,7 +115,7 @@ function createHtmlFromItems(items) {
         <a href="${url}" target="_blank">
           <h2>${item.name}</h2>
         </a>
-          <div>version ${modelVersion.name} Created at: ${createdAt}</div>
+          <div>version ${modelVersion.name} published at: ${publishedAt}</div>
           <div class="tags">${item.tags.join(', ')}</div>
           <details>
           <summary>Trained Words</summary>
@@ -127,13 +127,14 @@ function createHtmlFromItems(items) {
             <div>${item.description}</div>
             </details>
           </div>
+          <!-- ${JSON.stringify(modelVersion)} -->  
           <img src="${imageUrl}" style="width: 80%" />
         </div>`;
     const modelVersions = item.modelVersions;
     for(let i = 1; i < modelVersions.length; i++) {
       const modelVersion = modelVersions[i];
       const name = modelVersion.name;
-      const createdAt = modelVersion.createdAt;
+      const publishedAt = new Date(modelVersion.publishedAt).toLocaleString();
       const url = modelVersion.downloadUrl;
       const trainedWords = modelVersion.trainedWords || [];
       html += `
@@ -142,7 +143,7 @@ function createHtmlFromItems(items) {
         <summary>Model Version ${name}</summary>
         <div class="inner">
           <a href="${url}" target="_blank">${name}</h2></a>
-          <div>version ${name} Created at: ${createdAt}</div>
+          <div>version ${name} Published at: ${publishedAt}</div>
           <div class="tags">${item.tags.join(', ')}</div>
           <details>
           <summary>Trained Words</summary>

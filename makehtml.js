@@ -12,12 +12,13 @@ async function run() {
     return;
   }
   const opt = argMapper(process.argv.slice(2)) || {query: 'fate', max_number: 10};
+  
   if (config.apiKey) {
     opt.apiKey = config.apiKey;
   }
 
   const html = await civitai.createHtml(opt);
-  const filebase = opt.query || 'loras';
+  const filebase = opt.query || opt.tag[0] || 'loras';
   const filename = `./data/${filebase}.html`;
 
   fs.writeFileSync(filename, html, 'utf8');
