@@ -32,6 +32,7 @@ function filterItems(items, baseModel) {
     const newModelVersions = modelVersions.filter(modelVersion => {
       return baseModel.includes(modelVersion.baseModel);
     });
+    item.modelVersions = newModelVersions;
     return newModelVersions.length > 0;
   }
   );
@@ -55,22 +56,54 @@ async function getLoras(opt) {
   const payload = {
     sort: sort,
     period: period,
+    nsfw: true,
     limit: 20,
-  };
+  };  
   if (query != '') {
     payload['query'] = query;
   }
-  if (apiKey != '') {
-    payload['apiKey'] = apiKey;
+
+  const optionKeys = [
+    'username', 'parimalFileOnly', 'allowDerivatives',
+    'allowDifferentLicenses', 'allowCommercialUse',
+    'supportsGeneration'
+  ]
+
+  optionKeys.forEach((key) => {
+    if (opt[key]) {
+      payload[key] = opt[key];
+    }
+  });
+  
+  if (opt.username) {
+    payload['username'] = opt.username;
   }
+
+  if (apiKey != '') {
+    payload['token'] = apiKey;
+  }
+
+  const privateKeys = [
+    'favarites', 'hidden', 
+  ]
+  privateKeys.forEach((key) => {
+    if (opt[key]) {
+      if (payload.hasOwnProperty('token')) {
+        payload[key] = opt[key];
+      } else {
+        console.log('You need to set apiKey to get private option');
+        throw new Error('You need to set apiKey to get private option');
+      }
+    }
+  });
 
   const items = [];
   const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
-  console.log('fetch url:');
+  console.log('fetch url:',url);
   const data = await getPage(url);
   console.log('fetch data:');
   const metadata = data.metadata;
-  const filteredItems = filterItems(data.items, baseModel);
+  const filteredItems = filterItems(data.items, baseModel, opt.nsfw);
   items.push(...filteredItems);
   let nextPage = metadata.nextPage;
 
@@ -85,7 +118,6 @@ async function getLoras(opt) {
       break;
     }
     const filteredItems = filterItems(nextData.items, baseModel);
-    console.log(`filteredItems ${filteredItems.map((item) => item.name)}`);
     items.push(...filteredItems);
     if (!nextPage) {
       console.log('no next page');

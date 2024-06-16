@@ -20,7 +20,7 @@ async function run() {
   const html = await civitai.createHtml(opt);
   const filebase = opt.query || opt.tag[0] || 'loras';
   const filename = `./data/${filebase}.html`;
-
+  console.log(`write to ${filename}`);
   fs.writeFileSync(filename, html, 'utf8');
 }
 
