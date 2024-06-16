@@ -1,26 +1,30 @@
-const { types } = require('util');
-
-const config = {}
+/* eslint-disable no-undef */
+const config = {};
 const civitaiUrl = 'https://civitai.com';
 
+// eslint-disable-next-line no-unused-vars
 const requireOptions = {
   // Checkpoint, TextualInversion, Hypernetwork, AestheticGradient, LORA, Controlnet, Poses
   types: ['Checkpoint', 'TextualInversion', 'Hypernetwork', 'AestheticGradient', 'LORA', 'Controlnet', 'Poses',
-      'LoCon', 'DoRA','VAE'
+    'LoCon', 'DoRA','VAE'
   ],
   sort: ['Most Downloaded', 'Relevancy', 'Most Liked', 'Newest', 'Oldest', 'Most Discussed',
     'Most Collected', 'Most Buzz'],
   models: ['Pony', 'SD 1.4', 'SD 1.5', 'SD 1.5 Hpyter', 'SD 1.5 LCM', 'SD 2.0', 'SD 2.0', 'SD 2.0 768', 
     'SD 2.1', 'SD 2.1 768', 'SD 2.1 Unclip', 'SD 3', 'SDXL 0.9', 'SDXL 1.0', 'SDXL LCM',
     'SDXL Disttilled', 'SDXL Hyper', 'SDXL Lightning', 'SDXL Turbo', 'SVD', 'SVD XT',
-    'Stable Cascade']
-}
+    'Stable Cascade'],
+  // period (OPTIONAL)	enum (AllTime, Year, Month, Week, Day)
+  period: ['AllTime', 'Year', 'Month', 'Week', 'Day'],
+};
 
 
 async function getPage(url) {
   const response = await fetch(url);
-  const data = await response.json();
-  return data;    
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return  await response.json();
 }
 
 function filterItems(items, baseModel) {
@@ -38,17 +42,17 @@ function filterItems(items, baseModel) {
 
 async function getLoras(opt) {
   const baseModel = opt.baseModel || ['Pony'];
-  const loraType = opt.loraType || config.loraType || ['LORA', 'LoCon', 'DoRA'];
+  const loraType = ['LORA', 'LoCon', 'DoRA'];
   // const page = opt.page || 1;
   const query = opt.query || '';
-  const tags = opt.tag || [''];
-  const period = opt.period || 'Year';
+  const tags = opt.tag || [];
+  const period = opt.period || 'Month';
   const sort = opt.sort || 'Most Downloaded';
   const apiKey = opt.apiKey || config.apiKey || '';
   const max_number = opt.max_number || 100;
 
-  const types = loraType.map((type) => `type=${type}`).join('&');
-  const tag = tags.map((tag) => `tag=${tag}`).join('&');
+  const types = loraType.map((type) => `types=${type}`).join('&');
+  const tag = tags.length == 0 ? '' : '&' + tags.map((tag) => `tags=${tag}`).join('&');
   const payload = {
     sort: sort,
     period: period,
@@ -62,18 +66,25 @@ async function getLoras(opt) {
   }
 
   const items = [];
-  const url = `${civitaiUrl}/api/v1/models?${types}${tag}${new URLSearchParams(payload)}`
+  const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
+  console.log('fetch url:');
   const data = await getPage(url);
+  console.log('fetch data:');
   const metadata = data.metadata;
   const filteredItems = filterItems(data.items, baseModel);
   items.push(...filteredItems);
-  console.log(metadata);
   let nextPage = metadata.nextPage;
 
   while (nextPage && items.length < max_number) { 
     console.log(`download data ${items.length} / ${max_number}`);
     const nextData = await getPage(nextPage);
-    nextPage = nextData.metadata.nextPage;
+    try {
+      nextPage = nextData.metadata.nextPage;
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
+      console.log('no next page');
+      break;
+    }
     const filteredItems = filterItems(nextData.items, baseModel);
     console.log(`filteredItems ${filteredItems.map((item) => item.name)}`);
     items.push(...filteredItems);
@@ -101,19 +112,19 @@ function createHtmlFromItems(items) {
         <div class="inner">
         <a href="${url}" target="_blank">
           <h2>${item.name}</h2>
+        </a>
           <div class="tags">${item.tags.join(', ')}</div>
+          <details>
+          <summary>Trained Words</summary>
+          <div class="trainWords">${trainedWords.join('<br>')}</div> 
+          </details>
           <div class="description">
             <details>
             <summary>Description</summary>
             <div>${item.description}</div>
             </details>
-          <img src="${imageUrl}" />
-          <details>
-          <summary>Trained Words</summary>
-          <div class="trainWords">${trainedWords.join('<br>')}</div> 
-          </details>
-        </a>
-        <!-- ${JSON.stringify(item, null, 2)} -->
+          </div>
+          <img src="${imageUrl}" style="width: 80%" />
         </div>
       </div>
     `;
@@ -122,14 +133,8 @@ function createHtmlFromItems(items) {
   return html;
 }
 
-// node.js only
-async function main() {
-  if (typeof window !== 'undefined') {
-    console.log('This is not node.js');
-    return;
-  }
-  const fs = require('fs');
-  const result = await getLoras({query: 'シャニマス', max_number: 10});
+async function createHtml(opt) {
+  const result = await getLoras(opt);
   const items = result.items;
   const htmlHeader = `
   <DOCTYPE html>
@@ -138,17 +143,23 @@ async function main() {
     <meta charset="utf-8">
     <title>Lora</title>
     <style>
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
+      }
       h2 {
         color: #333;
         /* word overflow */
         overflow: hidden;
       }
       .item {
-        display: inline-flex;
+        display: inline;
         margin: 10px;
         padding: 10px;
         border: 1px solid #ccc;
-        width: 30%;
+        width: 25%; 
         /* word */
         word-wrap: break-word;
       }
@@ -167,21 +178,18 @@ async function main() {
       }
     </style>
   </head>
-  `
+  <body>
+  <div class="container">
+  `;
   const content = createHtmlFromItems(items);
-  const filename = 'data/loras.html';
   const htmlFooter = `
+  </div>
+  <footer></footer>
+  </body>
   </html>
-  `
+  `;
   const html = htmlHeader + content + htmlFooter;
-  fs.writeFileSync(filename, html, 'utf8');
-}
-
-async function getCivitaiLora2Html(opt, max_number) {
-  const result = await getLoras(opt);
-  const items = result.items;
-  html = createHtmlFromItems(items);
   return html;
 }
 
-main();
+exports.createHtml = createHtml;
