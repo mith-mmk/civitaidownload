@@ -17,9 +17,5 @@
     "eslint-plugin-promise": "^6.2.0",
     "global": "^4.4.0",
     "globals": "^15.5.0"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "sqlite3": "^5.1.7"
   }
 }

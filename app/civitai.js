@@ -21,7 +21,8 @@ const requireOptions = {
 async function getPage(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    const error = await response.text();
+    throw new Error(`HTTP error! status: ${response.status} ${error}`);
   }
   return  await response.json();
 }
@@ -99,7 +100,7 @@ async function getLoras(opt) {
 
   const items = [];
   const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
-  console.log('fetch url:',url);
+  console.log('fetch url:');
   const data = await getPage(url);
   console.log('fetch data:');
   const metadata = data.metadata;
@@ -134,34 +135,32 @@ async function getLoras(opt) {
 
 function createHtmlFromItems(items) {
   const html = items.map((item) => {
-    const modelVersion = item.modelVersions[0];
-    const url = modelVersion.downloadUrl;
-    const imageUrl = modelVersion.images[0].url;
-    const publishedAt = new Date(modelVersion.publishedAt).toLocaleString();
-    const trainedWords = modelVersion.trainedWords || [];
+    const modelVersion = item?.modelVersions[0];
+    const url = modelVersion?.downloadUrl;
+    const imageUrl = modelVersion?.images[0]?.url;
+    const publishedAt = new Date(modelVersion?.publishedAt).toLocaleString();
+    const trainedWords = modelVersion?.trainedWords || [];
     let html = `
-      <div class="item">`
-    
-    html += `
+      <div class="item">
+        <div class="image"><img src="${imageUrl}"/></div>
         <div class="inner">
-        <a href="${url}" target="_blank">
-          <h2>${item.name}</h2>
-        </a>
-          <div>version ${modelVersion.name} published at: ${publishedAt}</div>
-          <div class="tags">${item.tags.join(', ')}</div>
-          <details>
-          <summary>Trained Words</summary>
-          <div class="trainWords">${trainedWords.join('<br>')}</div> 
-          </details>
-          <div class="description">
-            <details>
-            <summary>Description</summary>
-            <div>${item.description}</div>
-            </details>
+          <div class="title">
+            <a href="${url}" target="_blank"><h2>${item.name}</h2></a>
           </div>
-          <!-- ${JSON.stringify(modelVersion)} -->  
-          <img src="${imageUrl}" style="width: 80%" />
-        </div>`;
+          <div class="footer">
+            <div class="version">version ${modelVersion.name} published at: ${publishedAt}</div>
+            <div class="tags">${item.tags.join(', ')}</div>
+            <details>
+            <summary>Trained Words</summary>
+            <div class="trainWords">${trainedWords.join('<br>')}</div> 
+            </details>
+            <div class="description">
+              <details>
+              <summary>Description</summary>
+              <div>${item.description}</div>
+              </details>
+            </div>
+            <!-- ${JSON.stringify(modelVersion)} -->`;
     const modelVersions = item.modelVersions;
     for(let i = 1; i < modelVersions.length; i++) {
       const modelVersion = modelVersions[i];
@@ -170,25 +169,25 @@ function createHtmlFromItems(items) {
       const url = modelVersion.downloadUrl;
       const trainedWords = modelVersion.trainedWords || [];
       html += `
-      <div class="other-version">
-        <details>
-        <summary>Model Version ${name}</summary>
-        <div class="inner">
-          <a href="${url}" target="_blank">${name}</h2></a>
-          <div>version ${name} Published at: ${publishedAt}</div>
-          <div class="tags">${item.tags.join(', ')}</div>
-          <details>
-          <summary>Trained Words</summary>
-          <div class="trainWords">${trainedWords.join('<br>')}</div>
-          </details>
-        </div>
-        <details>
-      </div>`;
+            <div class="other-version">
+              <details>
+              <summary>Model Version ${name}</summary>
+              <div class="more-inner">        
+                <a href="${url}" target="_blank">${name}</h2></a>
+                <div>version ${name} Published at: ${publishedAt}</div>
+                <div class="tags">${item.tags.join(', ')}</div>
+                <details>
+                <summary>Trained Words</summary>
+                <div class="trainWords">${trainedWords.join('<br>')}</div>
+                </details>
+              </div>
+              <details>
+            </div>`;
     }
-      
     html += `
-      </div>
-    `;
+    </div> <!-- footer -->
+  </div> <!-- inner -->
+</div> <!-- item -->`;
     return html;
   }).join('');
 
@@ -204,41 +203,7 @@ async function createHtml(opt) {
   <head>
     <meta charset="utf-8">
     <title>Lora</title>
-    <style>
-      .container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        padding: 10px;
-      }
-      h2 {
-        color: #333;
-        /* word overflow */
-        overflow: hidden;
-      }
-      .item {
-        display: inline;
-        margin: 10px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        width: 25%; 
-        /* word */
-        word-wrap: break-word;
-      }
-      .inner {
-        display: block;
-      }
-      .tags {
-        color: #666;
-      }
-      .trainWords {
-        color: #aaa;
-        background-color: #222;
-      }
-      .description {
-        color: #666;
-      }
-    </style>
+    <link rel="stylesheet" href="base.css">
   </head>
   <body>
   <div class="container">
@@ -254,4 +219,6 @@ async function createHtml(opt) {
   return html;
 }
 
+exports.getLoras = getLoras;
 exports.createHtml = createHtml;
+exports.createHtmlFromItems = createHtmlFromItems;

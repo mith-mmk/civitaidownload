@@ -1,8 +1,9 @@
+/* globals require, process */
 const fs = require('fs');
 const config = require('./data/config.json');
 const civitai = require('./app/civitai.js');
+const path = require('path');
 
-console.log('makehtml.js');
 run();
 
 // node.js only
@@ -12,14 +13,20 @@ async function run() {
     return;
   }
   const opt = argMapper(process.argv.slice(2)) || {query: 'fate', max_number: 10};
-  
+  let outputDir = './data';
+  // output-dir
+  if (opt['output']) {
+    outputDir = opt['output'][0];
+    // dell output-dir
+    delete opt['output'];
+  }
   if (config.apiKey) {
     opt.apiKey = config.apiKey;
   }
-
+  const optFilename = opt.output ? `${opt.output}` : null;
   const html = await civitai.createHtml(opt);
   const filebase = opt.query || opt.tag[0] || 'loras';
-  const filename = `./data/${filebase}.html`;
+  const filename = path.join(outputDir, optFilename || `${filebase}.html`);
   console.log(`write to ${filename}`);
   fs.writeFileSync(filename, html, 'utf8');
 }
@@ -35,6 +42,7 @@ function argMapper(args) {
       argMap[key].push(args[i]);
     }
   }
+
   // convert array to string
   // single args
   const singleArgs = ['query', 'max_number'];
