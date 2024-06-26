@@ -137,7 +137,9 @@ function createHtmlFromItems(items) {
   const html = items.map((item) => {
     const modelVersion = item?.modelVersions[0];
     const url = modelVersion?.downloadUrl;
-    const imageUrl = modelVersion?.images[0]?.url;
+    const images = modelVersion?.images.filter((image) => image.type == 'image');
+    const imageUrl = images[0]?.url;
+    // console.log('images:', JSON.stringify(modelVersion?.images, null, 2));
     const publishedAt = new Date(modelVersion?.publishedAt).toLocaleString();
     const trainedWords = modelVersion?.trainedWords || [];
     let html = `
@@ -169,7 +171,7 @@ function createHtmlFromItems(items) {
       const url = modelVersion.downloadUrl;
       const trainedWords = modelVersion.trainedWords || [];
       html += `
-            <div class="other-version">
+            <div class="other-version" style="display:none">
               <details>
               <summary>Model Version ${name}</summary>
               <div class="more-inner">        
@@ -196,22 +198,28 @@ function createHtmlFromItems(items) {
 
 async function createHtml(opt) {
   const result = await getLoras(opt);
+  const filebase = opt.query || opt.tag[0] || 'loras';
+  const cssbase = opt.cssbase || 'base.css';
+  const jsbase = opt.jsbase || 'base.js';
   const items = result.items;
   const htmlHeader = `
   <DOCTYPE html>
   <html>
   <head>
     <meta charset="utf-8">
-    <title>Lora</title>
-    <link rel="stylesheet" href="base.css">
+    <title>Lora - ${filebase}</title>
+    <link rel="stylesheet" href="${cssbase}">
   </head>
   <body>
+  <header></header>
+  <div class="tool-box"></div>
   <div class="container">
   `;
   const content = createHtmlFromItems(items);
   const htmlFooter = `
   </div>
   <footer></footer>
+  <script src="${jsbase}" type="module"></script>
   </body>
   </html>
   `;
