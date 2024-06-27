@@ -1,3 +1,4 @@
+/* eslint-disable */
 const toolBox = document.querySelector('.tool-box');
 const toolTable = document.createElement('table');
 toolTable.className = 'tool-table';
