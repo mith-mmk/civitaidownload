@@ -73,6 +73,8 @@ async function modelDownload(url, opt) {
   const subDirectory = config?.mapper[conceptTag] || conceptTag;
   let outputDir = opt?.output || config?.output?.dir || './data';
   let responseJSON = null;
+  opt.response = opt.response || config?.output?.response;
+
   switch (modelType) {
   case 'LORA':
   case 'LoCon':
@@ -111,6 +113,12 @@ async function modelDownload(url, opt) {
         title: opt.title || '',
         V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`
       };
+    }
+    responseJSON = JSON.stringify(responseJSON);
+    console.log('responseJSON:', responseJSON);
+    console.log(('opt.response:', opt.response));
+    if (opt.response) {
+      fsPromises.appendFile(opt.response, responseJSON + '\n');
     }
     break;
   case 'VAE':
@@ -193,11 +201,6 @@ async function modelDownload(url, opt) {
     saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
   }
   await fsPromises.rename(tempFile, saveFile);
-  if (opt.response && responseJSON) {
-    const f = await fsPromises.open(opt.response, 'a', {encoding: 'utf8'});
-    await f.write(JSON.stringify(responseJSON));
-    await f.close();
-  }
 
   if (opt.hash) {
     if (!hash) {
