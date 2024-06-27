@@ -92,3 +92,23 @@ items.forEach((item) => {
   });
 });
 
+const versions = document.querySelectorAll('.more_version');
+versions.forEach((version) => {
+  version.addEventListener('click', (event) => {
+    console.log('clicked:', event.target);
+    event.stopPropagation();
+    const otherVersions = version.parentElement.querySelectorAll('.other-version');
+    otherVersions.forEach((otherVersion) => {
+      otherVersion.style.display = otherVersion.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+});
+
+const allDetails = document.querySelectorAll('summary > div');
+allDetails.forEach((details) => {
+  details.addEventListener('click', (event) => {
+    console.log('clicked:', event.target);
+    event.stopPropagation();
+    details.open = !details.open;
+  });
+});

@@ -1,3 +1,4 @@
+/* global process, require, console */
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -20,7 +21,7 @@ let remain;
     <importHashJson>: import hash json filename (default: f:/twitter/hash.json)
     <sort>: sort hash json filename (default: false)
 */
-function calc_hash(file) {
+function calcHash(file) {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
     const filesize = fs.statSync(file).size;
@@ -60,7 +61,7 @@ async function createHashFromFiles(files, opt = {}) {
   console.log(`search file numbers is ${files.length}`);
   remain = files.length;
   files.forEach(file => {
-    const promise = calc_hash(file);
+    const promise = calcHash(file);
     promises.push(promise);
   });
 
@@ -129,17 +130,17 @@ async function main() {
     const alreadys = Object.keys(prefiles);
     const newfiles = files.filter(file => {
       const base = path.basename(file);
-      return !alreadys.includes(base)
+      return !alreadys.includes(base);
     });
     if (!newfiles.length) {
-      console.log(`no new files found`);
+      console.log('no new files found');
       return;
     }
     console.log(`new files found ${newfiles.length}`);
     await createHashFromFiles(newfiles), {
       hashList: prejson,
       fileList: prefiles
-    }
+    };
   } else {
     console.log(`file not found ${path}`);
   }

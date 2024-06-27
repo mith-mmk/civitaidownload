@@ -102,6 +102,10 @@ h2 {
   display: block;
 }
 
+.more_version {
+  display: block;
+}
+
 .tags {
   display: block;
 }
@@ -109,6 +113,20 @@ h2 {
   display: block;
   background-color: #222;
 }
-.description {
-  display: block;
+
+
+details[open] {
+  position: relative;
+  bottom: 0;
+  z-index: 900;
+  /* 飛び出ないように */
+  overflow: hidden;
+  /* 高さを指定 */
+  max-height: 400px;
+  max-width: 300px;
+  /* 高さを超えた部分を非表示 */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* スクロールバーを表示 */
+  overflow: scroll;
 }

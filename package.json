@@ -1,7 +1,6 @@
 {
   "name": "chivitaidownload",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,5 +16,6 @@
     "eslint-plugin-promise": "^6.2.0",
     "global": "^4.4.0",
     "globals": "^15.5.0"
-  }
+  },
+  "description": ""
 }

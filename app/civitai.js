@@ -1,25 +1,222 @@
 /* eslint-disable no-undef */
 const civitaiUrl = 'https://civitai.com';
+const fsPromises = require('fs').promises;
+const fs = require('fs');
+const process = require('process');
+const path = require('path');
+const config = require('../data/config.json');
 
-// eslint-disable-next-line no-unused-vars
+/*
 const requireOptions = {
   // Checkpoint, TextualInversion, Hypernetwork, AestheticGradient, LORA, Controlnet, Poses
   types: ['Checkpoint', 'TextualInversion', 'Hypernetwork', 'AestheticGradient', 'LORA', 'Controlnet', 'Poses',
-    'LoCon', 'DoRA','VAE'
+    'LoCon', 'DoRA', 'VAE'
   ],
   sort: ['Most Downloaded', 'Relevancy', 'Most Liked', 'Newest', 'Oldest', 'Most Discussed',
     'Most Collected', 'Most Buzz'],
-  models: ['Pony', 'SD 1.4', 'SD 1.5', 'SD 1.5 Hpyter', 'SD 1.5 LCM', 'SD 2.0', 'SD 2.0', 'SD 2.0 768', 
+  models: ['Pony', 'SD 1.4', 'SD 1.5', 'SD 1.5 Hpyter', 'SD 1.5 LCM', 'SD 2.0', 'SD 2.0', 'SD 2.0 768',
     'SD 2.1', 'SD 2.1 768', 'SD 2.1 Unclip', 'SD 3', 'SDXL 0.9', 'SDXL 1.0', 'SDXL LCM',
     'SDXL Disttilled', 'SDXL Hyper', 'SDXL Lightning', 'SDXL Turbo', 'SVD', 'SVD XT',
     'Stable Cascade'],
   // period (OPTIONAL)	enum (AllTime, Year, Month, Week, Day)
-  period: ['AllTime', 'Year', 'Month', 'Week', 'Day'],
+  period: ['AllTime', 'Year', 'Month', 'Week', 'Day']
 };
+*/
+
+const baseTag = ['character', 'style', 'concept', 'clothing', 'poses'];
+
+async function getModelVersionInfo(modelId, opt) {
+  const headers = createHeaders(opt);
+  const url = `${civitaiUrl}/api/v1/model-versions/${modelId}`;
+  const response = await fetch(url, {headers: headers});
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`HTTP error! status: ${response.status} ${error}`);
+  }
+  return await response.json();
+}
 
 
-async function getPage(url) {
-  const response = await fetch(url);
+async function getModelInfo(modelId, opt) {
+  const headers = createHeaders(opt);
+  const url = `${civitaiUrl}/api/v1/models/${modelId}`;
+  const response = await fetch(url, {headers: headers});
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`HTTP error! status: ${response.status} ${error}`);
+  }
+  return await response.json();
+}
+
+async function modelDownload(url, opt) {
+  const modelVersionId = url.split('/').pop();
+  const info = await getModelVersionInfo(modelVersionId, opt);
+  const modelInfo = await getModelInfo(info.modelId, opt);
+  let hash = null;
+  const tags = modelInfo.tags;
+  let conceptTag = '';
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
+    if (baseTag.includes(tag)) {
+      conceptTag = tag;
+      break;
+    }
+  }
+
+  const baseModel = config?.mapper[info.baseModel] || info.baseModel;
+  const modelName = info?.model?.name;
+
+  const autoV2Hash = info.files[0].hashes.AutoV2.toLowerCase();
+  const filename = info.files[0].name;
+  console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
+  const modelType = info?.model?.type;
+  const subDirectory = config?.mapper[conceptTag] || conceptTag;
+  let outputDir = opt?.output || config?.output?.dir || './data';
+  let responseJSON = null;
+  switch (modelType) {
+  case 'LORA':
+  case 'LoCon':
+  case 'DoRA':
+    outputDir = `${outputDir}/Lora/${baseModel}/${subDirectory}`;
+    opt.hash = config?.output?.lorahash;
+    switch (conceptTag) {
+    case 'character':
+      responseJSON = {
+        W: 0.1,
+        C: opt.categories || [],
+        title: opt.title || '',
+        lora: `<lora:${filename.replace('.safetensors')}:0.8>`,
+        prompt: info.trainedWords[0] || '',
+        neg: '',
+        V: [opt.title || '', info.trainedWords[0] || '']
+      };
+      break;
+    case 'concept':
+    case 'poses':
+      responseJSON = {
+        W: 0.1,
+        C: opt.categories || [],
+        title: opt.title || '',
+        member: opt.member || '${member}',
+        V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`,
+        append: '',
+        neg: '',
+        multipy: 1
+      };
+      break;
+    default:
+      responseJSON = {
+        W: 0.1,
+        C: opt.categories || [],
+        title: opt.title || '',
+        V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`
+      };
+    }
+    break;
+  case 'VAE':
+    outputDir = `${outputDir}/VAE/`;
+    opt.hash = config?.output?.vaehash;
+    break;
+  case 'Checkpoint':
+    outputDir = `${outputDir}/Checkpoint/`;
+    opt.hash = config?.output?.modelhash;
+    break;
+  }
+
+  // const url = info.files[0].downloadUrl;
+  console.log(outputDir, filename);
+  const file = path.join(outputDir, filename);
+  const tempDir = opt?.temp || config?.temp ||'./temp';
+  fsPromises.mkdir(tempDir, {recursive: true});
+  console.log(`download ${tempDir} to ${autoV2Hash}`);
+  const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
+
+  if (opt.hash) {
+    try {
+      hash = await fsPromises.readFile(opt.hash, 'utf8');
+      hash = JSON.parse(hash);
+      console.log(`hash[${autoV2Hash}]: ${autoV2Hash}`);
+      if (hash) {
+        if (hash[autoV2Hash] != null) {
+          console.log(`always download ${filename}`);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('hash file not found');
+      throw e;
+    }
+  }
+
+  const headers = createHeaders(opt);
+  const response = await fetch(url, {headers: headers});
+  const reader = response.body.getReader();
+
+  const contentLength = response.headers.get('Content-Length');
+  const total = parseInt(contentLength, 10);
+  let received = 0;
+  const f = await fsPromises.open(tempFile, 'w');
+  const startTime = new Date().getTime();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) {
+      break;
+    }
+    await f.write(value);
+    received += value.length;
+    //
+    const lapTime = new Date().getTime();
+    const elapsedTime = (lapTime - startTime) / 1000;
+    process.stdout.write(
+      `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
+  }
+  await f.close();
+  process.stdout.write('\n');
+  const filebase = filename.substring(0, filename.lastIndexOf('.'));
+  await fsPromises.mkdir(outputDir, {recursive: true});
+  const infoFile = filebase + '.civitai.info';
+  await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
+  console.log('info file saved}');
+  const imageFile = filebase + '.preview.png';
+  const images = info.images.filter((image) => image.type == 'image');
+  const imageUrl = images[0]?.url.replace('.jpeg', '.png');
+  console.log('imageUrl:', imageUrl);
+  const imageResponse = await fetch(imageUrl, {headers: headers});
+  const arrayBuffer = await imageResponse.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
+  console.log(`preview downloaded ${file}`);
+  let renameCount = 0;
+  let saveFile = file;
+  while (fs.existsSync(saveFile)) {
+    saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
+  }
+  await fsPromises.rename(tempFile, saveFile);
+  if (opt.response && responseJSON) {
+    const f = await fsPromises.open(opt.response, 'a', {encoding: 'utf8'});
+    await f.write(JSON.stringify(responseJSON));
+    await f.close();
+  }
+
+  if (opt.hash) {
+    if (!hash) {
+      hash = {};
+    }
+    if (autoV2Hash) {
+      if (modelType == 'Checkpoint') {
+        hash[autoV2Hash] = filebase;
+      } else {
+        hash[autoV2Hash] = filename;
+      }
+    }
+    await fsPromises.rename(opt.hash, opt.hash + '.bak');
+    await fsPromises.writeFile(opt.hash, JSON.stringify(hash, null, 2));
+  }
+}
+
+async function getPage(url, headers={}) {
+  const response = await fetch(url, {headers: headers});
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`HTTP error! status: ${response.status} ${error}`);
@@ -40,26 +237,35 @@ function filterItems(items, baseModel) {
   return filteredItems;
 }
 
+function createHeaders(opt) {
+  const apiKey = opt.apiKey || '';
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (apiKey != '') {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+  return headers;
+}
 
-async function getLoras(opt) {
-  const baseModel = opt.baseModel || ['Pony'];
-  const loraType = ['LORA', 'LoCon', 'DoRA'];
-  // const page = opt.page || 1;
+
+function createPayload(opt) {
   const query = opt.query || '';
   const tags = opt.tag || [];
   const period = opt.period || 'Month';
   const sort = opt.sort || 'Most Downloaded';
-  const apiKey = opt.apiKey || config.apiKey || '';
-  const max_number = opt.max_number || 100;
 
-  const types = loraType.map((type) => `types=${type}`).join('&');
+  const types = opt.types.map((type) => `types=${type}`).join('&');
   const tag = tags.length == 0 ? '' : '&' + tags.map((tag) => `tag=${tag}`).join('&');
+
+
   const payload = {
     sort: sort,
     period: period,
     nsfw: true,
-    limit: 20,
-  };  
+    limit: 20
+  };
+
   if (query != '') {
     payload['query'] = query;
   }
@@ -68,28 +274,24 @@ async function getLoras(opt) {
     'username', 'parimalFileOnly', 'allowDerivatives',
     'allowDifferentLicenses', 'allowCommercialUse',
     'supportsGeneration'
-  ]
+  ];
 
   optionKeys.forEach((key) => {
     if (opt[key]) {
       payload[key] = opt[key];
     }
   });
-  
+
   if (opt.username) {
     payload['username'] = opt.username;
   }
 
-  if (apiKey != '') {
-    payload['token'] = apiKey;
-  }
-
   const privateKeys = [
-    'favarites', 'hidden', 
-  ]
+    'favarites', 'hidden'
+  ];
   privateKeys.forEach((key) => {
     if (opt[key]) {
-      if (payload.hasOwnProperty('token')) {
+      if (payload.token) {
         payload[key] = opt[key];
       } else {
         console.log('You need to set apiKey to get private option');
@@ -97,20 +299,33 @@ async function getLoras(opt) {
       }
     }
   });
+  const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
+  return url;
+}
+
+async function getModels(opt) {
+  const baseModel = opt.baseModel || ['Pony'];
+  const loraType = ['LORA', 'LoCon', 'DoRA'];
+
+  // const page = opt.page || 1;
+  opt.types = opt.types || loraType;
+  const maxNumber = opt.maxNumber || 100;
+
+  const headers = createHeaders(opt);
+  url = createPayload(opt);
 
   const items = [];
-  const url = `${civitaiUrl}/api/v1/models?${types}${tag}&${new URLSearchParams(payload)}`;
   console.log('fetch url:');
-  const data = await getPage(url);
+  const data = await getPage(url, headers);
   console.log('fetch data:');
   const metadata = data.metadata;
   const filteredItems = filterItems(data.items, baseModel, opt.nsfw);
   items.push(...filteredItems);
   let nextPage = metadata.nextPage;
 
-  while (nextPage && items.length < max_number) { 
-    console.log(`download data ${items.length} / ${max_number}`);
-    const nextData = await getPage(nextPage);
+  while (nextPage && items.length < maxNumber) {
+    console.log(`download data ${items.length} / ${maxNumber}`);
+    const nextData = await getPage(nextPage, headers);
     try {
       nextPage = nextData.metadata.nextPage;
     // eslint-disable-next-line no-unused-vars
@@ -129,7 +344,7 @@ async function getLoras(opt) {
   return {
     items: items,
     nextPage: nextPage,
-    metadata: data.metadata,
+    metadata: data.metadata
   };
 }
 
@@ -151,7 +366,10 @@ function createHtmlFromItems(items) {
           </div>
           <div class="footer">
             <div class="version">version ${modelVersion.name} published at: ${publishedAt}</div>
+            <details>
+            <summary>Tags</summary>
             <div class="tags">${item.tags.join(', ')}</div>
+            </details>
             <details>
             <summary>Trained Words</summary>
             <div class="trainWords">${trainedWords.join('<br>')}</div> 
@@ -164,7 +382,12 @@ function createHtmlFromItems(items) {
             </div>
             <!-- ${JSON.stringify(modelVersion)} -->`;
     const modelVersions = item.modelVersions;
-    for(let i = 1; i < modelVersions.length; i++) {
+    if (modelVersions.length > 1) {
+      html += `
+            <div class="more_version">more version</div>`;
+    }
+
+    for (let i = 1; i < modelVersions.length; i++) {
       const modelVersion = modelVersions[i];
       const name = modelVersion.name;
       const publishedAt = new Date(modelVersion.publishedAt).toLocaleString();
@@ -197,8 +420,8 @@ function createHtmlFromItems(items) {
 }
 
 async function createHtml(opt) {
-  const result = await getLoras(opt);
-  const filebase = opt.query || opt.tag[0] || 'loras';
+  const result = await getModels(opt);
+  const filebase = opt.filename || opt.query || opt?.tag?.join('-') || 'models';
   const cssbase = opt.cssbase || 'base.css';
   const jsbase = opt.jsbase || 'base.js';
   const items = result.items;
@@ -227,6 +450,7 @@ async function createHtml(opt) {
   return html;
 }
 
-exports.getLoras = getLoras;
+exports.getModels = getModels;
 exports.createHtml = createHtml;
 exports.createHtmlFromItems = createHtmlFromItems;
+exports.modelDownload = modelDownload;

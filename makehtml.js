@@ -1,4 +1,4 @@
-/* globals require, process */
+/* globals require, process, console */
 const fs = require('fs');
 const config = require('./data/config.json');
 const civitai = require('./app/civitai.js');
@@ -12,21 +12,15 @@ async function run() {
     console.log('This is not node.js');
     return;
   }
-  const opt = argMapper(process.argv.slice(2)) || {query: 'fate', max_number: 10};
-  let outputDir = './data';
-  // output-dir
-  if (opt['output']) {
-    outputDir = opt['output'][0];
-    // dell output-dir
-    delete opt['output'];
-  }
+  const opt = argMapper(process.argv.slice(2)) || {query: 'fate', maxNumber: 10};
+  let outputDir = opt.output || './data';
   if (config.apiKey) {
     opt.apiKey = config.apiKey;
   }
-  const optFilename = opt.output ? `${opt.output}` : null;
   const html = await civitai.createHtml(opt);
-  const filebase = opt.query || opt.tag[0] || 'loras';
-  const filename = path.join(outputDir, optFilename || `${filebase}.html`);
+  const filebase = opt.filename || opt.query || opt?.tag?.join('-') || 'models';
+  console.log(`filebase: ${filebase}`);
+  const filename = path.join(outputDir, `${filebase}.html`);
   console.log(`write to ${filename}`);
   fs.writeFileSync(filename, html, 'utf8');
 }
@@ -37,6 +31,8 @@ function argMapper(args) {
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith('--')) {
       key = args[i].slice(2);
+      key = key.replace(/_./g, (s) => s.charAt(1).toUpperCase());
+      key = key.replace(/-./g, (s) => s.charAt(1).toUpperCase());
       argMap[key] = [];
     } else {
       argMap[key].push(args[i]);
@@ -45,15 +41,16 @@ function argMapper(args) {
 
   // convert array to string
   // single args
-  const singleArgs = ['query', 'max_number'];
+  const singleArgs = ['query', 'maxNumber', 'filename', 'output'];
   for (const key in argMap) {
     if (singleArgs.includes(key)) {
       argMap[key] = argMap[key][0];
     }
   }
+  console.log('argMap:', argMap);
   return argMap;
 }
 
 // argMapper
-// --query query --tag [tag] --max_number max_number
-// --query imas --tag idol --max_number 10
+// --query query --tag [tag] --maxNumber maxNumber
+// --query imas --tag idol --maxNumber 10
