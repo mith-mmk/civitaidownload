@@ -51,12 +51,16 @@ function argMapper(args) {
   for (let i = 1; i < args.length; i++) {
     if (args[i].startsWith('--')) {
       key = args[i].slice(2);
-      argMap[key] = [];
+      if (argMap[key] === undefined) {
+        argMap[key] = [];
+      }
     } else if (args[i].startsWith('-')) {
       key = args[i].slice(1);
       if (key == 'C') key = 'categories';
       if (key == 'T') key = 'title';
-      argMap[key] = [];
+      if (argMap[key] === undefined) {
+        argMap[key] = [];
+      }
     } else {
       argMap[key].push(args[i]);
     }

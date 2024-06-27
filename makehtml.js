@@ -33,7 +33,9 @@ function argMapper(args) {
       key = args[i].slice(2);
       key = key.replace(/_./g, (s) => s.charAt(1).toUpperCase());
       key = key.replace(/-./g, (s) => s.charAt(1).toUpperCase());
-      argMap[key] = [];
+      if (argMap[key] === undefined) {
+        argMap[key] = [];
+      }
     } else {
       argMap[key].push(args[i]);
     }
