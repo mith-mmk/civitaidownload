@@ -17,5 +17,8 @@
     "global": "^4.4.0",
     "globals": "^15.5.0"
   },
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }

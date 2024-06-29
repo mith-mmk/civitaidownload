@@ -316,6 +316,12 @@ function createHeaders(opt) {
 
 function createPayload(opt) {
   const query = opt.query || '';
+  if (typeof(opt.tag) == 'string') {
+    opt.tag = [opt.tag];
+  }
+  if (typeof(opt.types) == 'string') {
+    opt.types = [opt.types];
+  }
   const tags = opt.tag || [];
   const period = opt.period || 'Month';
   const sort = opt.sort || 'Most Downloaded';
