@@ -55,16 +55,25 @@ items.forEach((item) => {
     const link = title.querySelector('a').href;
     const tilteText = title.innerText;
     
+    
     const trs = tbody.querySelectorAll('tr');
     let isExist = false;
     trs.forEach((tr) => {
       const tds = tr.querySelectorAll('td');
       if (tds[0].innerText === link) {
         tr.remove();
+        const checkElm = title.querySelector('.checked');
+        checkElm.remove();
         isExist = true;
       }
     });
     if (!isExist) {
+      // titleの後にチェックを入れる
+      const checkElm = document.createElement('span');
+      checkElm.className = 'checked';
+      checkElm.innerText = '✔';
+      title.appendChild(checkElm);
+
       // new row
       const tr = document.createElement('tr');
       tbody.appendChild(tr);

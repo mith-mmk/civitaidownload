@@ -25,21 +25,15 @@
 }
 h2 {
   color: #333;
+  background-color: rgba(22, 22, 22, 0.6);
   /* word overflow */
   overflow: hidden;
 }
-/*
-<div class="item">
-  <img class="image" src="https://placehold.jp/150x150.png" alt="image">
-  <div class="inner">
-    <h2>タイトル</h2>
-    <div class="tags">タグ1, タグ2</div>
-    <div class="trainWords
-    ">学習単語1, 学習単語2</div>
-    <div class="description">説明文</div>
-  </div>
-</div>
-*/
+
+.title .checked {
+  color: red;
+  font-weight: bold;
+}
 
 .item {
   display: inline-block;
