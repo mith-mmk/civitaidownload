@@ -87,6 +87,8 @@ async function modelDownload(url, opt) {
   const autoV2Hash = info.files[0].hashes.AutoV2.toLowerCase();
   const filename = info.files[0].name;
   console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
+  const mainDirectory = config?.mapper[baseModel] || baseModel;
+  const baseModelDirectory = config?.mapper[baseModel] || baseModel;
   const modelType = info?.model?.type;
   const subDirectory = config?.mapper[conceptTag] || conceptTag;
   let outputDir = opt?.output || config?.output?.dir || './data';
@@ -98,7 +100,7 @@ async function modelDownload(url, opt) {
   case 'LORA':
   case 'LoCon':
   case 'DoRA':
-    outputDir = `${outputDir}/Lora/${baseModel}/${subDirectory}`;
+    outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
     opt.hash = config?.output?.lorahash;
     switch (conceptTag) {
     case 'character':
@@ -138,11 +140,15 @@ async function modelDownload(url, opt) {
 
     break;
   case 'VAE':
-    outputDir = `${outputDir}/VAE/`;
+    outputDir = `${outputDir}/${mainDirectory}`;
     opt.hash = config?.output?.vaehash;
     break;
   case 'Checkpoint':
-    outputDir = `${outputDir}/Checkpoint/`;
+    outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}`;
+    opt.hash = config?.output?.modelhash;
+    break;
+  default:
+    outputDir = `${outputDir}/${mainDirectory}`;
     opt.hash = config?.output?.modelhash;
     break;
   }
@@ -152,7 +158,7 @@ async function modelDownload(url, opt) {
   // check hash file
   if (opt.hash) {
     try {
-      hash = await fsPromises.readFile(opt.hash, 'utf8');
+      let hash = await fsPromises.readFile(opt.hash, 'utf8');
       hash = JSON.parse(hash);
       console.log(`hash[${autoV2Hash}]: ${autoV2Hash}`);
       if (hash) {
@@ -178,6 +184,7 @@ async function modelDownload(url, opt) {
   const downloadHeaders = createHeaders(opt);
   const filehash = crypto.createHash('sha256');
   const isExists = fs.existsSync(tempFile);
+  let received = 0;
 
   if (isExists && opt.resume) {
     console.log(`file ${tempFile} is already exists try resuming download`);
@@ -194,9 +201,8 @@ async function modelDownload(url, opt) {
   const contentLength = response.headers.get('Content-Length');
   const reader = response.body.getReader();
   const total = parseInt(contentLength, 10);
-  let received = 0;
 
-  const f = isExists ? await fsPromises.open(file, 'a') :  await fsPromises.open(tempFile, 'w');
+  const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
   const startTime = new Date().getTime();
   // eslint-disable-next-line no-constant-condition
   while (true) {

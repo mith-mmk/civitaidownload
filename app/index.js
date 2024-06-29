@@ -5,21 +5,45 @@ const express = require('express');
 //const path = require('path');
 // const config = require('./data/config.json');
 const civitai = require('./civitai.js');
-
+const timer = require('timers');
 const app = express();
 const port = 3000;
 // eslint-disable-next-line no-unused-vars
 
-/*
-function taskWatcher() {
+
+// eslint-disable-next-line no-unused-vars
+function createTask(apiname, promise, opt) {
+  return {
+    taskname: apiname,
+    promise: promise,
+    isDone: false,
+    params: opt,
+    timestamp: new Date(),
+    endeTime: null,
+    status: 'none',
+    result: null,
+    error: null
+  };
+}
+
+let isShutdown = false;
+const tasks = [];
+// eslint-disable-next-line no-unused-vars
+async function taskWatcher() {
   while (!isShutdown) {
-    const task = tasks[0];
-    if (task.isDone) {
-      tasks.shift();
-      console.log('task is done');
-    } else {
-      console.log('task is not done');
-    }
+    tasks.forEach((task) => {
+      if (task.promise.error) {
+        task.isDone = true;
+        task.status = 'error';
+        task.error = task.promise.error;
+        task.endTime = new Date();
+      } else if (task.promise.isDone) {
+        task.isDone = true;
+        task.status = 'done';
+        task.result = task.promise.result;
+        task.endTime = new Date();
+      }
+    });
     // sleep
     const waitTime = 100;
     timer.setTimeout(() => {
@@ -27,7 +51,6 @@ function taskWatcher() {
     }, waitTime);
   }
 }
-*/
 
 
 app.post('/api/download', (req, res) => {
@@ -55,3 +78,4 @@ app.listen(port, () => {
 });
 
 // taskWatcher();
+
