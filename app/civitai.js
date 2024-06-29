@@ -49,6 +49,23 @@ async function getModelInfo(modelId, opt) {
   return await response.json();
 }
 
+/* model download
+ * @param {string} url            model version url
+ * @param {object} opt            options
+ * @param {string} opt.output     output directory
+ * @param {string} opt.apiKey     civitai api key
+ * @param {string} opt.temp       temp directory
+ * @param {string} opt.hash       hash file(if metadata hash in this file, skip download)
+ * @param {boolean} opt.force     force download(ignore hash check)
+ * @param {boolean} opt.resume    resume download
+ * @returns {Promise<void>}
+ *
+ * Underoptions only for private use
+ * @param {string} opt.title      private response title
+ * @param {string} opt.response   private response file(.jsonl)
+ * @param {string} opt.categories private response categories
+ * @param {string} opt.member     private response member name
+ */
 async function modelDownload(url, opt) {
   const modelVersionId = url.split('/').pop();
   const info = await getModelVersionInfo(modelVersionId, opt);
@@ -76,6 +93,7 @@ async function modelDownload(url, opt) {
   let responseJSON = null;
   opt.response = opt.response || config?.output?.response;
 
+  // check modelType
   switch (modelType) {
   case 'LORA':
   case 'LoCon':
@@ -129,14 +147,9 @@ async function modelDownload(url, opt) {
     break;
   }
 
-  // const url = info.files[0].downloadUrl;
   console.log(`download ${filename} to ${outputDir}`);
-  const file = path.join(outputDir, filename);
-  const tempDir = opt?.temp || config?.temp ||'./temp';
-  fsPromises.mkdir(tempDir, {recursive: true});
-  console.log(`download ${tempDir} to ${autoV2Hash}`);
-  const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
 
+  // check hash file
   if (opt.hash) {
     try {
       hash = await fsPromises.readFile(opt.hash, 'utf8');
@@ -154,25 +167,35 @@ async function modelDownload(url, opt) {
     }
   }
 
-  const headers = createHeaders(opt);
-  const response = await fetch(url, {headers: headers});
+  // create temp filename
+  const file = path.join(outputDir, filename);
+  const tempDir = opt?.temp || config?.temp ||'./temp';
+  fsPromises.mkdir(tempDir, {recursive: true});
+  console.log(`download ${tempDir} to ${autoV2Hash}`);
+  const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
+
+  // download file
+  const downloadHeaders = createHeaders(opt);
+  const filehash = crypto.createHash('sha256');
+  const isExists = fs.existsSync(tempFile);
+
+  if (isExists && opt.resume) {
+    console.log(`file ${tempFile} is already exists try resuming download`);
+    const stat = fs.statSync(tempFile);
+    received = stat.size;
+    filehash.update(fs.readFileSync(tempFile));
+    downloadHeaders['Range'] = `bytes=${received}-`;
+  }
+  const response = await fetch(url, {headers: downloadHeaders});
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`HTTP error! status: ${response.status} ${error}`);
   }
-  const reader = response.body.getReader();
-
   const contentLength = response.headers.get('Content-Length');
+  const reader = response.body.getReader();
   const total = parseInt(contentLength, 10);
   let received = 0;
-  const filehash = crypto.createHash('sha256');
-  const isExists = fs.existsSync(file);
-  if (isExists && opt.resume) {
-    console.log(`file ${file} is already exists try resuming download`);
-    const stat = fs.statSync(file);
-    received = stat.size;
-    filehash.update(fs.readFileSync(file));
-  }
+
   const f = isExists ? await fsPromises.open(file, 'a') :  await fsPromises.open(tempFile, 'w');
   const startTime = new Date().getTime();
   // eslint-disable-next-line no-constant-condition
@@ -191,17 +214,16 @@ async function modelDownload(url, opt) {
       `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
   }
   const autoV2HashFile = filehash.digest('hex').slice(0, 10).toLowerCase();
-  if (autoV2Hash != autoV2HashFile) {
-    console.log(`hash error ${autoV2Hash} != ${autoV2HashFile}`);
+  if (autoV2Hash != autoV2HashFile && !opt.force) {
+    console.log(`\nhash error ${autoV2Hash} != ${autoV2HashFile}`);
     await f.close();
     await fsPromises.unlink(tempFile);
     return;
   }
-
   await f.close();
   process.stdout.write('\n');
   const filebase = filename.substring(0, filename.lastIndexOf('.'));
-  // console.log(('opt.response:', opt.response));
+
   if (opt.response) {
     try {
       await fsPromises.appendFile(opt.response, responseJSON + '\n');
@@ -209,15 +231,20 @@ async function modelDownload(url, opt) {
       console.log(`response file ${opt.responce} is not found`);
     }
   }
+
+  // save info file
   await fsPromises.mkdir(outputDir, {recursive: true});
   const infoFile = filebase + '.civitai.info';
   await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
   console.log(`info file saved ${infoFile}`);
+
+  // save preview image
   const imageFile = filebase + '.preview.png';
   const images = info.images.filter((image) => image.type == 'image');
   const imageUrl = images[0]?.url.replace('.jpeg', '.png');
   console.log('imageUrl:', imageUrl);
   try {
+    const headers = createHeaders(opt);
     const imageResponse = await fetch(imageUrl, {headers: headers});
     const arrayBuffer = await imageResponse.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -226,6 +253,8 @@ async function modelDownload(url, opt) {
   } catch (e) {
     console.log('preview download error:', e);
   }
+
+  // move model file
   let renameCount = 0;
   let saveFile = file;
   while (fs.existsSync(saveFile)) {
@@ -234,6 +263,7 @@ async function modelDownload(url, opt) {
   await fsPromises.rename(tempFile, saveFile);
   console.log('responseJSON:', responseJSON);
 
+  // update hash file
   if (opt.hash) {
     if (!hash) {
       hash = {};
