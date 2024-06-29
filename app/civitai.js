@@ -2,6 +2,7 @@
 const civitaiUrl = 'https://civitai.com';
 const fsPromises = require('fs').promises;
 const fs = require('fs');
+const crypto = require('crypto');
 const process = require('process');
 const path = require('path');
 const config = require('../data/config.json');
@@ -116,11 +117,7 @@ async function modelDownload(url, opt) {
     }
     responseJSON = JSON.stringify(responseJSON);
     responseJSON = responseJSON.replace(/(".+?"):/g, '$1: ').replace(/([\d"\]}]),/g, '$1, ');
-    console.log('responseJSON:', responseJSON);
-    console.log(('opt.response:', opt.response));
-    if (opt.response) {
-      fsPromises.appendFile(opt.response, responseJSON + '\n');
-    }
+
     break;
   case 'VAE':
     outputDir = `${outputDir}/VAE/`;
@@ -133,7 +130,7 @@ async function modelDownload(url, opt) {
   }
 
   // const url = info.files[0].downloadUrl;
-  console.log(outputDir, filename);
+  console.log(`download ${filename} to ${outputDir}`);
   const file = path.join(outputDir, filename);
   const tempDir = opt?.temp || config?.temp ||'./temp';
   fsPromises.mkdir(tempDir, {recursive: true});
@@ -159,6 +156,10 @@ async function modelDownload(url, opt) {
 
   const headers = createHeaders(opt);
   const response = await fetch(url, {headers: headers});
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`HTTP error! status: ${response.status} ${error}`);
+  }
   const reader = response.body.getReader();
 
   const contentLength = response.headers.get('Content-Length');
@@ -166,12 +167,14 @@ async function modelDownload(url, opt) {
   let received = 0;
   const f = await fsPromises.open(tempFile, 'w');
   const startTime = new Date().getTime();
+  const filehash = crypto.createHash('sha256');
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {done, value} = await reader.read();
     if (done) {
       break;
     }
+    filehash.update(value);
     await f.write(value);
     received += value.length;
     //
@@ -180,28 +183,49 @@ async function modelDownload(url, opt) {
     process.stdout.write(
       `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
   }
+  const autoV2HashFile = filehash.digest('hex').slice(0, 10).toLowerCase();
+  if (autoV2Hash != autoV2HashFile) {
+    console.log(`hash error ${autoV2Hash} != ${autoV2HashFile}`);
+    await f.close();
+    await fsPromises.unlink(tempFile);
+    return;
+  }
+
   await f.close();
   process.stdout.write('\n');
   const filebase = filename.substring(0, filename.lastIndexOf('.'));
+  // console.log(('opt.response:', opt.response));
+  if (opt.response) {
+    try {
+      await fsPromises.appendFile(opt.response, responseJSON + '\n');
+    } catch (e) {
+      console.log(`response file ${opt.responce} is not found`);
+    }
+  }
   await fsPromises.mkdir(outputDir, {recursive: true});
   const infoFile = filebase + '.civitai.info';
   await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
-  console.log('info file saved}');
+  console.log(`info file saved ${infoFile}`);
   const imageFile = filebase + '.preview.png';
   const images = info.images.filter((image) => image.type == 'image');
   const imageUrl = images[0]?.url.replace('.jpeg', '.png');
   console.log('imageUrl:', imageUrl);
-  const imageResponse = await fetch(imageUrl, {headers: headers});
-  const arrayBuffer = await imageResponse.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
-  console.log(`preview downloaded ${file}`);
+  try {
+    const imageResponse = await fetch(imageUrl, {headers: headers});
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
+    console.log(`preview downloaded ${file}`);
+  } catch (e) {
+    console.log('preview download error:', e);
+  }
   let renameCount = 0;
   let saveFile = file;
   while (fs.existsSync(saveFile)) {
     saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
   }
   await fsPromises.rename(tempFile, saveFile);
+  console.log('responseJSON:', responseJSON);
 
   if (opt.hash) {
     if (!hash) {

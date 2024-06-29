@@ -28,18 +28,29 @@ async function run() {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
       const parts = line.match(/'[^']+'|[^ ]+/g);
-      console.log('parts:', parts);
+      // console.log('parts:', parts);
+      if (!parts) {
+        continue;
+      }
+      if (parts.length < 2) {
+        continue;
+      }
       // const _script = parts[0];
       opt.title = null;
       opt.categories = null;
       const url = parts[1];
-      if (parts.length > 3) {
-        opt.title = parts[2];
+      if (parts.length > 2) {
+        opt.title = parts[2].replace(/'/g, '');
       }
-      if (parts.length > 4) {
+      if (parts.length > 3) {
         opt.categories = parts[3].split(',');
       }
-      await civitai.modelDownload(url, opt);
+      // console.log('opt:', opt);
+      try {
+        await civitai.modelDownload(url, opt);
+      } catch (err) {
+        console.error('Error:', err);
+      }
     }
   }
 }
