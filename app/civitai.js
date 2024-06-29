@@ -165,9 +165,16 @@ async function modelDownload(url, opt) {
   const contentLength = response.headers.get('Content-Length');
   const total = parseInt(contentLength, 10);
   let received = 0;
-  const f = await fsPromises.open(tempFile, 'w');
-  const startTime = new Date().getTime();
   const filehash = crypto.createHash('sha256');
+  const isExists = fs.existsSync(file);
+  if (isExists && opt.resume) {
+    console.log(`file ${file} is already exists try resuming download`);
+    const stat = fs.statSync(file);
+    received = stat.size;
+    filehash.update(fs.readFileSync(file));
+  }
+  const f = isExists ? await fsPromises.open(file, 'a') :  await fsPromises.open(tempFile, 'w');
+  const startTime = new Date().getTime();
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {done, value} = await reader.read();
