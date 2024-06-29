@@ -21,9 +21,11 @@ async function run() {
   if (url.startsWith('http')) {
     await civitai.modelDownload(url, opt);
   } else {
-    // response file
-    const responseTexts = fs.readFileSync(url, 'utf8');
-    const lines = responseTexts.split('\n');
+    // batch download
+    // [command] url (title) (categories)
+    // command: is not used, yet
+    const batchText = fs.readFileSync(url, 'utf8');
+    const lines = batchText.split('\n');
     for (const line of lines) {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
@@ -90,4 +92,4 @@ function argMapper(args) {
 }
 
 // argMapper
-// modelversionID --temp [tempDir] --output [outputDir]
+// modelversionID --temp [tempDir] --output [outputDir] [--force true] [--resume true]
