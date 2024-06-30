@@ -71,7 +71,6 @@ async function modelDownload(url, opt) {
     const modelVersionId = url.split('/').pop();
     const info = await getModelVersionInfo(modelVersionId, opt);
     const modelInfo = await getModelInfo(info.modelId, opt);
-    let hash = null;
     const tags = modelInfo.tags;
     let conceptTag = '';
     for (let i = 0; i < tags.length; i++) {
@@ -81,16 +80,18 @@ async function modelDownload(url, opt) {
         break;
       }
     }
-
+    // opt.resume = true;
     const baseModel = config?.mapper[info.baseModel] || info.baseModel;
     const modelName = info?.model?.name;
+    const downloadFile = info.files.filter((file) => file.primary)[0];
 
-    const autoV2Hash = info.files[0].hashes.AutoV2.toLowerCase();
-    const filename = info.files[0].name;
-    console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
-    const mainDirectory = config?.mapper[baseModel] || baseModel;
-    const baseModelDirectory = config?.mapper[baseModel] || baseModel;
+    const autoV2Hash = downloadFile.hashes.AutoV2.toLowerCase();
+    const sha256 = downloadFile.hashes.SHA256.toLowerCase();
+    const filename = downloadFile.name;
     const modelType = info?.model?.type;
+    console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
+    const mainDirectory = config?.mapper[modelType] || modelType;
+    const baseModelDirectory = config?.mapper[baseModel] || baseModel;
     const subDirectory = config?.mapper[conceptTag] || conceptTag;
     let outputDir = opt?.output || config?.output?.dir || './data';
     let responseJSON = null;
@@ -192,45 +193,60 @@ async function modelDownload(url, opt) {
 
     if (isExists && opt.resume) {
       console.log(`file ${tempFile} is already exists try resuming download`);
-      const stat = fs.statSync(tempFile);
-      received = stat.size;
-      filehash.update(fs.readFileSync(tempFile));
+      const f = await fsPromises.open(tempFile, 'r');
+      const stream = f.createReadStream();
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const chunk = stream.read(1024 * 1024);
+        if (chunk) {
+          filehash.update(chunk);
+          received += chunk.length;
+        } else {
+          break;
+        }
+      }
+      console.log(`received ${received} bytes`);
+      await f.close();
       downloadHeaders['Range'] = `bytes=${received}-`;
     }
     const response = await fetch(url, {headers: downloadHeaders});
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`HTTP error! status: ${response.status} ${error}`);
-    }
-    const contentLength = response.headers.get('Content-Length');
-    const reader = response.body.getReader();
-    const total = parseInt(contentLength, 10);
-
-    const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
-    const startTime = new Date().getTime();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) {
-        break;
+      if (response.status == 416) {
+        console.log('file is already downloaded');
+      } else {
+        throw new Error(`HTTP error! status: ${response.status} ${error}`);
       }
-      filehash.update(value);
-      await f.write(value);
-      received += value.length;
-      //
-      const lapTime = new Date().getTime();
-      const elapsedTime = (lapTime - startTime) / 1000;
-      process.stdout.write(
-        `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
-    }
-    const autoV2HashFile = filehash.digest('hex').slice(0, 10).toLowerCase();
-    if (autoV2Hash != autoV2HashFile && !opt.force) {
-      console.log(`\nhash error ${autoV2Hash} != ${autoV2HashFile}`);
+    } else {
+      const contentLength = response.headers.get('Content-Length');
+      const reader = response.body.getReader();
+      const total = parseInt(contentLength, 10);
+
+      const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
+      const startTime = new Date().getTime();
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) {
+          break;
+        }
+        filehash.update(value);
+        await f.write(value);
+        received += value.length;
+        //
+        const lapTime = new Date().getTime();
+        const elapsedTime = (lapTime - startTime) / 1000;
+        process.stdout.write(
+          `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
+      }
       await f.close();
-      await fsPromises.unlink(tempFile);
-      throw new Error(`hash check error download file hash ${autoV2HashFile} is not equal ${autoV2Hash}`);
     }
-    await f.close();
+    const sha256sum = filehash.digest('hex').toLowerCase();
+    if ((sha256sum != sha256) && !opt.force) {
+      console.log(`\nhash error ${sha256} != ${sha256sum}`);
+      fs.unlink(tempFile);
+      throw new Error(`hash error ${sha256} != ${sha256sum}`);
+    }
     process.stdout.write('\n');
     const filebase = filename.substring(0, filename.lastIndexOf('.'));
 
@@ -269,15 +285,15 @@ async function modelDownload(url, opt) {
     let saveFile = file;
     while (fs.existsSync(saveFile)) {
       saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
+      saveFile = path.join(outputDir, saveFile);
     }
     await fsPromises.rename(tempFile, saveFile);
     console.log('responseJSON:', responseJSON);
 
     // update hash file
     if (opt.hash) {
-      if (!hash) {
-        hash = {};
-      }
+      const hashtext = await fsPromises.readFile(opt.hash, 'utf8');
+      const hash = JSON.parse(hashtext);
       if (autoV2Hash) {
         if (modelType == 'Checkpoint') {
           hash[autoV2Hash] = filebase;
