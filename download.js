@@ -29,7 +29,7 @@ async function run() {
     for (const line of lines) {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
-      const parts = line.match(/'[^']+'|[^ ]+/g);
+      const parts = line.replace(/\r/g, '').match(/'[^']+'|[^ ]+/g);
       // console.log('parts:', parts);
       if (!parts) {
         continue;

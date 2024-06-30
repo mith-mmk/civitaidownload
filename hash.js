@@ -1,9 +1,11 @@
 
 /* globals console, require, fetch */
-const url = 'http://titus:7860/sdapi/v1/sd-models';
-const remapping = require('f:/twitter/hash.json');
+const fs = require('fs');
+const url = 'http://local:7860/sdapi/v1/sd-models';
+const jsonfile = 'f:/ai/models/model-hash.json';
 // const remapping = {};
 async function run() {
+  const remapping = fs.existsSyn(jsonfile) ? JSON.parse(fs.readFileSync(jsonfile, 'utf8')) : {};
   const response = await fetch(url);
   const data = await response.json();
   data.forEach(element => {

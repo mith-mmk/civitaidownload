@@ -67,222 +67,237 @@ async function getModelInfo(modelId, opt) {
  * @param {string} opt.member     private response member name
  */
 async function modelDownload(url, opt) {
-  const modelVersionId = url.split('/').pop();
-  const info = await getModelVersionInfo(modelVersionId, opt);
-  const modelInfo = await getModelInfo(info.modelId, opt);
-  let hash = null;
-  const tags = modelInfo.tags;
-  let conceptTag = '';
-  for (let i = 0; i < tags.length; i++) {
-    const tag = tags[i];
-    if (baseTag.includes(tag)) {
-      conceptTag = tag;
-      break;
+  try {
+    const modelVersionId = url.split('/').pop();
+    const info = await getModelVersionInfo(modelVersionId, opt);
+    const modelInfo = await getModelInfo(info.modelId, opt);
+    let hash = null;
+    const tags = modelInfo.tags;
+    let conceptTag = '';
+    for (let i = 0; i < tags.length; i++) {
+      const tag = tags[i];
+      if (baseTag.includes(tag)) {
+        conceptTag = tag;
+        break;
+      }
     }
-  }
 
-  const baseModel = config?.mapper[info.baseModel] || info.baseModel;
-  const modelName = info?.model?.name;
+    const baseModel = config?.mapper[info.baseModel] || info.baseModel;
+    const modelName = info?.model?.name;
 
-  const autoV2Hash = info.files[0].hashes.AutoV2.toLowerCase();
-  const filename = info.files[0].name;
-  console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
-  const mainDirectory = config?.mapper[baseModel] || baseModel;
-  const baseModelDirectory = config?.mapper[baseModel] || baseModel;
-  const modelType = info?.model?.type;
-  const subDirectory = config?.mapper[conceptTag] || conceptTag;
-  let outputDir = opt?.output || config?.output?.dir || './data';
-  let responseJSON = null;
-  opt.response = opt.response || config?.output?.response;
+    const autoV2Hash = info.files[0].hashes.AutoV2.toLowerCase();
+    const filename = info.files[0].name;
+    console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
+    const mainDirectory = config?.mapper[baseModel] || baseModel;
+    const baseModelDirectory = config?.mapper[baseModel] || baseModel;
+    const modelType = info?.model?.type;
+    const subDirectory = config?.mapper[conceptTag] || conceptTag;
+    let outputDir = opt?.output || config?.output?.dir || './data';
+    let responseJSON = null;
+    opt.response = opt.response || config?.output?.response;
 
-  // check modelType
-  switch (modelType) {
-  case 'LORA':
-  case 'LoCon':
-  case 'DoRA':
-    outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
-    opt.hash = config?.output?.lorahash;
-    switch (conceptTag) {
-    case 'character':
-      responseJSON = {
-        W: 0.1,
-        C: opt.categories || [],
-        title: opt.title || '',
-        lora: `<lora:${filename.replace('.safetensors')}:0.8>`,
-        prompt: info.trainedWords[0] || '',
-        neg: '',
-        V: [opt.title || '', info.trainedWords[0] || '']
-      };
+    // check modelType
+    switch (modelType) {
+    case 'LORA':
+    case 'LoCon':
+    case 'DoRA':
+      outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
+      opt.hash = config?.output?.lorahash;
+      switch (conceptTag) {
+      case 'character':
+        responseJSON = {
+          W: 0.1,
+          C: opt.categories || [],
+          title: opt.title || '',
+          lora: `<lora:${filename.replace('.safetensors')}:0.8>`,
+          prompt: info.trainedWords[0] || '',
+          neg: '',
+          V: [opt.title || '', info.trainedWords[0] || '']
+        };
+        break;
+      case 'concept':
+      case 'poses':
+        responseJSON = {
+          W: 0.1,
+          C: opt.categories || [],
+          title: opt.title || '',
+          member: opt.member || '${member}',
+          V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`,
+          append: '',
+          neg: '',
+          multipy: 1
+        };
+        break;
+      default:
+        responseJSON = {
+          W: 0.1,
+          C: opt.categories || [],
+          title: opt.title || '',
+          V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`
+        };
+      }
+      responseJSON = JSON.stringify(responseJSON);
+      responseJSON = responseJSON.replace(/(".+?"):/g, '$1: ').replace(/([\d"\]}]),/g, '$1, ');
+
       break;
-    case 'concept':
-    case 'poses':
-      responseJSON = {
-        W: 0.1,
-        C: opt.categories || [],
-        title: opt.title || '',
-        member: opt.member || '${member}',
-        V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`,
-        append: '',
-        neg: '',
-        multipy: 1
-      };
+    case 'VAE':
+      outputDir = `${outputDir}/${mainDirectory}`;
+      opt.hash = config?.output?.vaehash;
+      break;
+    case 'Checkpoint':
+      outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}`;
+      opt.hash = config?.output?.modelhash;
       break;
     default:
-      responseJSON = {
-        W: 0.1,
-        C: opt.categories || [],
-        title: opt.title || '',
-        V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`
-      };
-    }
-    responseJSON = JSON.stringify(responseJSON);
-    responseJSON = responseJSON.replace(/(".+?"):/g, '$1: ').replace(/([\d"\]}]),/g, '$1, ');
-
-    break;
-  case 'VAE':
-    outputDir = `${outputDir}/${mainDirectory}`;
-    opt.hash = config?.output?.vaehash;
-    break;
-  case 'Checkpoint':
-    outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}`;
-    opt.hash = config?.output?.modelhash;
-    break;
-  default:
-    outputDir = `${outputDir}/${mainDirectory}`;
-    opt.hash = config?.output?.modelhash;
-    break;
-  }
-
-  console.log(`download ${filename} to ${outputDir}`);
-
-  // check hash file
-  if (opt.hash) {
-    try {
-      let hash = await fsPromises.readFile(opt.hash, 'utf8');
-      hash = JSON.parse(hash);
-      console.log(`hash[${autoV2Hash}]: ${autoV2Hash}`);
-      if (hash) {
-        if (hash[autoV2Hash] != null) {
-          console.log(`always download ${filename}`);
-          return;
-        }
-      }
-    } catch (e) {
-      console.log('hash file not found');
-      throw e;
-    }
-  }
-
-  // create temp filename
-  const file = path.join(outputDir, filename);
-  const tempDir = opt?.temp || config?.temp ||'./temp';
-  fsPromises.mkdir(tempDir, {recursive: true});
-  console.log(`download ${tempDir} to ${autoV2Hash}`);
-  const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
-
-  // download file
-  const downloadHeaders = createHeaders(opt);
-  const filehash = crypto.createHash('sha256');
-  const isExists = fs.existsSync(tempFile);
-  let received = 0;
-
-  if (isExists && opt.resume) {
-    console.log(`file ${tempFile} is already exists try resuming download`);
-    const stat = fs.statSync(tempFile);
-    received = stat.size;
-    filehash.update(fs.readFileSync(tempFile));
-    downloadHeaders['Range'] = `bytes=${received}-`;
-  }
-  const response = await fetch(url, {headers: downloadHeaders});
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`HTTP error! status: ${response.status} ${error}`);
-  }
-  const contentLength = response.headers.get('Content-Length');
-  const reader = response.body.getReader();
-  const total = parseInt(contentLength, 10);
-
-  const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
-  const startTime = new Date().getTime();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) {
+      outputDir = `${outputDir}/${mainDirectory}`;
+      opt.hash = config?.output?.modelhash;
       break;
     }
-    filehash.update(value);
-    await f.write(value);
-    received += value.length;
-    //
-    const lapTime = new Date().getTime();
-    const elapsedTime = (lapTime - startTime) / 1000;
-    process.stdout.write(
-      `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
-  }
-  const autoV2HashFile = filehash.digest('hex').slice(0, 10).toLowerCase();
-  if (autoV2Hash != autoV2HashFile && !opt.force) {
-    console.log(`\nhash error ${autoV2Hash} != ${autoV2HashFile}`);
-    await f.close();
-    await fsPromises.unlink(tempFile);
-    return;
-  }
-  await f.close();
-  process.stdout.write('\n');
-  const filebase = filename.substring(0, filename.lastIndexOf('.'));
 
-  if (opt.response) {
-    try {
-      await fsPromises.appendFile(opt.response, responseJSON + '\n');
-    } catch (e) {
-      console.log(`response file ${opt.responce} is not found`);
-    }
-  }
+    console.log(`download ${filename} to ${outputDir}`);
 
-  // save info file
-  await fsPromises.mkdir(outputDir, {recursive: true});
-  const infoFile = filebase + '.civitai.info';
-  await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
-  console.log(`info file saved ${infoFile}`);
-
-  // save preview image
-  const imageFile = filebase + '.preview.png';
-  const images = info.images.filter((image) => image.type == 'image');
-  const imageUrl = images[0]?.url.replace('.jpeg', '.png');
-  console.log('imageUrl:', imageUrl);
-  try {
-    const headers = createHeaders(opt);
-    const imageResponse = await fetch(imageUrl, {headers: headers});
-    const arrayBuffer = await imageResponse.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
-    console.log(`preview downloaded ${file}`);
-  } catch (e) {
-    console.log('preview download error:', e);
-  }
-
-  // move model file
-  let renameCount = 0;
-  let saveFile = file;
-  while (fs.existsSync(saveFile)) {
-    saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
-  }
-  await fsPromises.rename(tempFile, saveFile);
-  console.log('responseJSON:', responseJSON);
-
-  // update hash file
-  if (opt.hash) {
-    if (!hash) {
-      hash = {};
-    }
-    if (autoV2Hash) {
-      if (modelType == 'Checkpoint') {
-        hash[autoV2Hash] = filebase;
-      } else {
-        hash[autoV2Hash] = filename;
+    // check hash file
+    if (opt.hash) {
+      try {
+        if (!fs.existsSync(opt.hash)) {
+          fs.writeFileSync(opt.hash, '{}');
+        }
+        let hash = await fsPromises.readFile(opt.hash, 'utf8');
+        hash = JSON.parse(hash);
+        console.log(`hash[${autoV2Hash}]: ${autoV2Hash}`);
+        if (hash) {
+          if (hash[autoV2Hash] != null) {
+            console.log(`always download ${filename}`);
+            return;
+          }
+        }
+      } catch (e) {
+        console.log('hash file not found', e);
+        throw new Error('hash file not found');
       }
     }
-    await fsPromises.rename(opt.hash, opt.hash + '.bak');
-    await fsPromises.writeFile(opt.hash, JSON.stringify(hash, null, 2));
+
+    // create temp filename
+    const file = path.join(outputDir, filename);
+    const tempDir = opt?.temp || config?.temp ||'./temp';
+    fsPromises.mkdir(tempDir, {recursive: true});
+    console.log(`download ${tempDir} to ${autoV2Hash}`);
+    const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
+
+    // download file
+    const downloadHeaders = createHeaders(opt);
+    const filehash = crypto.createHash('sha256');
+    const isExists = fs.existsSync(tempFile);
+    let received = 0;
+
+    if (isExists && opt.resume) {
+      console.log(`file ${tempFile} is already exists try resuming download`);
+      const stat = fs.statSync(tempFile);
+      received = stat.size;
+      filehash.update(fs.readFileSync(tempFile));
+      downloadHeaders['Range'] = `bytes=${received}-`;
+    }
+    const response = await fetch(url, {headers: downloadHeaders});
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`HTTP error! status: ${response.status} ${error}`);
+    }
+    const contentLength = response.headers.get('Content-Length');
+    const reader = response.body.getReader();
+    const total = parseInt(contentLength, 10);
+
+    const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
+    const startTime = new Date().getTime();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) {
+        break;
+      }
+      filehash.update(value);
+      await f.write(value);
+      received += value.length;
+      //
+      const lapTime = new Date().getTime();
+      const elapsedTime = (lapTime - startTime) / 1000;
+      process.stdout.write(
+        `\rReceived ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`);
+    }
+    const autoV2HashFile = filehash.digest('hex').slice(0, 10).toLowerCase();
+    if (autoV2Hash != autoV2HashFile && !opt.force) {
+      console.log(`\nhash error ${autoV2Hash} != ${autoV2HashFile}`);
+      await f.close();
+      await fsPromises.unlink(tempFile);
+      throw new Error(`hash check error download file hash ${autoV2HashFile} is not equal ${autoV2Hash}`);
+    }
+    await f.close();
+    process.stdout.write('\n');
+    const filebase = filename.substring(0, filename.lastIndexOf('.'));
+
+    if (opt.response) {
+      try {
+        await fsPromises.appendFile(opt.response, responseJSON + '\n');
+      } catch (e) {
+        console.log(`response file ${opt.responce} is not found`);
+      }
+    }
+
+    // save info file
+    await fsPromises.mkdir(outputDir, {recursive: true});
+    const infoFile = filebase + '.civitai.info';
+    await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
+    console.log(`info file saved ${infoFile}`);
+
+    // save preview image
+    const imageFile = filebase + '.preview.png';
+    const images = info.images.filter((image) => image.type == 'image');
+    const imageUrl = images[0]?.url.replace('.jpeg', '.png');
+    console.log('imageUrl:', imageUrl);
+    try {
+      const headers = createHeaders(opt);
+      const imageResponse = await fetch(imageUrl, {headers: headers});
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
+      console.log(`preview downloaded ${file}`);
+    } catch (e) {
+      console.log('preview download error:', e);
+    }
+
+    // move model file
+    let renameCount = 0;
+    let saveFile = file;
+    while (fs.existsSync(saveFile)) {
+      saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
+    }
+    await fsPromises.rename(tempFile, saveFile);
+    console.log('responseJSON:', responseJSON);
+
+    // update hash file
+    if (opt.hash) {
+      if (!hash) {
+        hash = {};
+      }
+      if (autoV2Hash) {
+        if (modelType == 'Checkpoint') {
+          hash[autoV2Hash] = filebase;
+        } else {
+          hash[autoV2Hash] = filename;
+        }
+      }
+      await fsPromises.rename(opt.hash, opt.hash + '.bak');
+      await fsPromises.writeFile(opt.hash, JSON.stringify(hash, null, 2));
+    }
+    return {
+      status: 'ok',
+      filename: saveFile
+    };
+  } catch (e) {
+    console.log('Error:', e);
+    return {
+      status: 'error',
+      error: e
+    };
   }
 }
 
@@ -381,48 +396,58 @@ function createPayload(opt) {
 }
 
 async function getModels(opt) {
-  const baseModel = opt.baseModel || ['Pony'];
-  const loraType = ['LORA', 'LoCon', 'DoRA'];
+  try {
+    const baseModel = opt.baseModel || ['Pony'];
+    const loraType = ['LORA', 'LoCon', 'DoRA'];
 
-  // const page = opt.page || 1;
-  opt.types = opt.types || loraType;
-  const maxNumber = opt.maxNumber || 100;
+    // const page = opt.page || 1;
+    opt.types = opt.types || loraType;
+    const maxNumber = opt.maxNumber || 100;
 
-  const headers = createHeaders(opt);
-  url = createPayload(opt);
+    const headers = createHeaders(opt);
+    url = createPayload(opt);
 
-  const items = [];
-  console.log('fetch url:');
-  const data = await getPage(url, headers);
-  console.log('fetch data:');
-  const metadata = data.metadata;
-  const filteredItems = filterItems(data.items, baseModel, opt.nsfw);
-  items.push(...filteredItems);
-  let nextPage = metadata.nextPage;
-
-  while (nextPage && items.length < maxNumber) {
-    console.log(`download data ${items.length} / ${maxNumber}`);
-    const nextData = await getPage(nextPage, headers);
-    try {
-      nextPage = nextData.metadata.nextPage;
-    // eslint-disable-next-line no-unused-vars
-    } catch (_) {
-      console.log('no next page');
-      break;
-    }
-    const filteredItems = filterItems(nextData.items, baseModel);
+    const items = [];
+    console.log('fetch url:');
+    const data = await getPage(url, headers);
+    console.log('fetch data:');
+    const metadata = data.metadata;
+    const filteredItems = filterItems(data.items, baseModel, opt.nsfw);
     items.push(...filteredItems);
-    if (!nextPage) {
-      console.log('no next page');
-      break;
+    let nextPage = metadata.nextPage;
+
+    while (nextPage && items.length < maxNumber) {
+      console.log(`download data ${items.length} / ${maxNumber}`);
+      const nextData = await getPage(nextPage, headers);
+      try {
+        nextPage = nextData.metadata.nextPage;
+        // eslint-disable-next-line no-unused-vars
+      } catch (_) {
+        console.log('no next page');
+        break;
+      }
+      const filteredItems = filterItems(nextData.items, baseModel);
+      items.push(...filteredItems);
+      if (!nextPage) {
+        console.log('no next page');
+        break;
+      }
     }
+
+    return {
+      status: 'ok',
+      items: items,
+      nextPage: nextPage,
+      metadata: data.metadata
+    };
+  } catch (e) {
+    console.log('Error:', e);
+    return {
+      status: 'error',
+      error: e
+    };
   }
 
-  return {
-    items: items,
-    nextPage: nextPage,
-    metadata: data.metadata
-  };
 }
 
 function createHtmlFromItems(items) {
