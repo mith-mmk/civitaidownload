@@ -234,7 +234,7 @@ async function modelDownload(url, opt) {
     process.stdout.write('\n');
     const filebase = filename.substring(0, filename.lastIndexOf('.'));
 
-    if (opt.response) {
+    if (opt.response && responseJSON != null) {
       try {
         await fsPromises.appendFile(opt.response, responseJSON + '\n');
       } catch (e) {

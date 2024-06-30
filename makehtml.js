@@ -12,7 +12,7 @@ async function run() {
     console.log('This is not node.js');
     return;
   }
-  const opt = argMapper(process.argv.slice(2)) || {query: 'fate', maxNumber: 10};
+  const opt = argMapper(process.argv.slice(2)) || {maxNumber: 10};
   let outputDir = opt.output || './data';
   if (config.apiKey) {
     opt.apiKey = config.apiKey;
