@@ -3,25 +3,25 @@
   "loraType": ["LORA", "LoCon", "DoRA"],
   "defaultModelType": "Pony",
   "html": {
-      "dir": "D:/ai/web/html/civitai/",
+      "dir": "/opt/ai/web/html/civitai/",
       "css": "/base.css",
       "js": "/base.js"
   },
   "lora": {
-    "dir": "D:/ai/models/lora",
+    "dir": "/opt/ai/models/lora",
     "hashfile": "./data/lora-hash.json"
   },
   "db": {
     "sqlite": "./data/db.sqlite3"
   },
-  "temp": "D:/ai/models/download/",
+  "temp": "/opt/ai/models/download/",
   "output": {
-    "dir": "D:/ai/models/",
+    "dir": "/opt/ai/models/",
     "modelhash": "./data/model-hash.json",
     "lorahash": "./data/loras-hash.json",
     "loradir": "{modelbase}/{type}/",
     "modeldir": "{modelbase}",
-    "response": "F:/ai/models/lora.jsonl"
+    "response": "/opt/ai/models/lora.jsonl"
   },
   "mapper": {
     "SD 1.5": "sd15",
