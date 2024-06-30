@@ -1,3 +1,6 @@
 eslint.config.js
 get.bat
 get.sh
+**/node_modules/
+**/.git/
+**/*.log

@@ -1,6 +1,6 @@
 /* globals require, process, console */
 const fs = require('fs');
-const config = require('./data/config.json');
+const config = require('./configs/config.json');
 const civitai = require('./app/civitai.js');
 const path = require('path');
 

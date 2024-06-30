@@ -1,2 +1,4 @@
 data/
 node_modules/
+configs/*.json
+!configs/config-sample.json

@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const process = require('process');
 const path = require('path');
-const config = require('../data/config.json');
+const config = require('../configs/config.json');
 
 /*
 const requireOptions = {
