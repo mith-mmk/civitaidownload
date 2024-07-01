@@ -1,5 +1,6 @@
 /* globals require, process, console */
 const fs = require('fs');
+const path = require('path');
 const config = require('./configs/config.json');
 const civitai = require('./app/civitai.js');
 
@@ -25,7 +26,9 @@ async function run() {
     // [command] url (title) (categories)
     // command: is not used, yet
     const batchText = fs.readFileSync(url, 'utf8');
+    const directory = path.dirname(url);
     const lines = batchText.split('\n');
+    const failed = [];
     for (const line of lines) {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
@@ -49,9 +52,24 @@ async function run() {
       }
       // console.log('opt:', opt);
       try {
-        await civitai.modelDownload(url, opt);
+        const result = await civitai.modelDownload(url, opt);
+        if (result) {
+          if (result.error) {
+            failed.push(line);
+          }
+        }
       } catch (err) {
+        failed.push(line);
         console.error('Error:', err);
+      }
+    }
+    const saveText = failed.join('\n');
+    if (failed.length > 0) {
+      const failedFile = path.join(directory, 'failed.txt');
+      if (fs.existsSync(failedFile)) {
+        fs.appendFileSync(failedFile, saveText, 'utf8');
+      } else {
+        fs.writeFileSync(failedFile, saveText, 'utf8');
       }
     }
   }
