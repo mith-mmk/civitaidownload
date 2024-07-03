@@ -1,12 +1,54 @@
 /* globals require, console */
+const cluster = require('cluster');
+const CPUs = require('os').cpus().length;
 const express = require('express');
 const civitai = require('./civitai.js');
 const app = express();
 const port = 3000;
+const config = require('../configs/config.json');
+const fs = require('fs');
+const path = require('path');
+const process = require('process');
+
+
 
 // eslint-disable-next-line no-unused-vars
-const tasks = {};
+//const queue = new TaskQueue();
+const queue = [];
 
+
+// eslint-disable-next-line no-unused-vars
+class TaskQueue {
+  constructor() {
+    this.queue = [];
+    this.taskCount = 0;
+    this.taskLimit = config.maxTasks || 4;
+    this.running = false;
+  }
+
+  push(task) {
+    task.status = 'waiting';
+    this.queue.push(task);
+    this.run().then(() => {
+      console.log('taskQueue.run done');
+    }).catch((err) => {
+      console.error('taskQueue.run error:', err);
+    });
+  }
+
+  async run() {
+    while (this.queue.length > 0) {
+      const task = this.queue.shift();
+      this.taskCount++;
+      task.status = 'running';
+      task.jobStartTime = new Date();
+      task.func(task.opt);
+    }
+  }
+}
+
+
+const tasks = {};
 // eslint-disable-next-line no-unused-vars
 async function promiseWatcher(promise, functionName, opt, taskId) {
   tasks[taskId] = {
@@ -15,6 +57,7 @@ async function promiseWatcher(promise, functionName, opt, taskId) {
     isDone: false,
     params: opt,
     timestamp: new Date(),
+    jobStartTime: null,
     endTime: null,
     status: 'running',
     result: null,
@@ -22,26 +65,35 @@ async function promiseWatcher(promise, functionName, opt, taskId) {
   };
   promise.then((result) => {
     console.log('promiseWatcher result:', result);
-    tasks[taskId].isDone = true;
     tasks[taskId].status = 'done';
     tasks[taskId].result = result;
-    tasks[taskId].endTime = new Date();
   }).catch((err) => {
     console.error('promiseWatcher error:', err);
-    tasks[taskId].isDone = true;
     tasks[taskId].status = 'error';
     tasks[taskId].error = err;
+  }).finary(() => {
+    tasks[taskId].isDone = true;
     tasks[taskId].endTime = new Date();
+    this.taskCount--;
   });
 }
 
 // eslint-disable-next-line no-unused-vars
-function taskWatcher(promise, functionName, opt) {
+async function taskWatcher(promise, func, opt) {
   const taskId = new Date().getTime().toString('36');
-  promiseWatcher(promise, functionName, opt, taskId);
+  taskRunner(func, opt);
+  promiseWatcher(promise, func, opt, taskId);
   return taskId;
 }
 
+// eslint-disable-next-line no-unused-vars
+async function taskRunner(func, opt) {
+  try {
+    queue.push({func: func, opt: opt});
+  } catch (err) {
+    console.error('taskRunner error:', err);
+  }
+}
 
 app.post('/api/download', (req, res) => {
   // eslint-disable-next-line no-unused-vars
@@ -90,9 +142,87 @@ app.get('/api/models', (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+
+app.get('/', (req, res) => {
+  const staticPath = config?.server?.staticPath || 'public';
+  const fs = require('fs');
+  let files = fs.readdirSync(staticPath);
+  files = files.filter((file) => {
+    return file.endsWith('.html');
+  }).map((file) => {
+    const stat = fs.statSync(path.join(staticPath, file));
+    return {
+      name: file,
+      size: stat.size,
+      mtime: stat.mtime,
+      time: new Date(stat.mtime).toLocaleString()
+    };
+  });
+
+  files.sort((a, b) => {
+    return b.mtime - a.mtime;
+  });
+
+  const html = `
+    <html>
+      <head>
+        <title>Model Server</title>
+      </head>
+      <body>
+        <h1>Model Server</h1>
+        <ul>
+          ${files.map(file => `<li><a href="${file.name}">${file.name}</a> ${file.time}</li>`).join('')}
+        </ul>
+      </body>
+  `;
+  res.send(html);
 });
+
+app.get('/css/:file', (req, res) => {
+  const staticPath = config?.server?.cssPath || config?.server?.staticPath || 'public/css';
+  const fs = require('fs');
+  const file = req.params.file;
+  const filePath = path.join(staticPath, file);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  }
+});
+
+app.get('/js/:file', (req, res) => {
+  const staticPath = config?.server?.jsPath || config?.server?.staticPath || 'public/js';
+  const fs = require('fs');
+  const file = req.params.file;
+  const filePath = path.join(staticPath, file);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  }
+});
+
+
+app.get('/:file', (req, res) => {
+  const staticPath = config?.server?.staticPath || 'public';
+  const file = req.params.file;
+  const filePath = path.join(staticPath, file);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  }
+});
+
+if (cluster.isMaster) {
+  console.log(`Master ${process.pid} is running`);
+  for (let i = 0; i < CPUs; i++) {
+    cluster.fork();
+  }
+  // eslint-disable-next-line no-unused-vars
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`worker ${worker.process.pid} died`);
+  });
+} else {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
 
 // taskWatcher();
 
