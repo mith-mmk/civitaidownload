@@ -138,8 +138,6 @@ async function modelDownload(url, opt) {
         };
       }
       responseJSON = JSON.stringify(responseJSON);
-      responseJSON = responseJSON.replace(/(".+?"):/g, '$1: ').replace(/([\d"\]}]),/g, '$1, ');
-
       break;
     case 'VAE':
       outputDir = `${outputDir}/${mainDirectory}`;

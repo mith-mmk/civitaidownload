@@ -97,12 +97,51 @@ async function taskRunner(func, opt) {
 
 app.post('/api/download', (req, res) => {
   // eslint-disable-next-line no-unused-vars
-  const data = req.body;
+  let data = req.body;
+  // eslint-disable-next-line no-unused-vars
+  const requireKeys = ['url', 'title', 'resume', 'force', 'categories', 'member'];
+  // data check
+  const keys = Object.keys(data);
+  let isOk = true;
+  const badKeys = [];
+  for (let i = 0; i < requireKeys.length; i++) {
+    if (!keys.includes(requireKeys[i])) {
+      badKeys.push(requireKeys[i]);
+      isOk = false;
+      return;
+    }
+  }
+  if (!isOk) {
+    res.send(JSON.stringify({status: 'error', error: 'missing keys', badKeys: badKeys}));
+    return;
+  }
+
+  // header Authorization check
+  const authHeader = req?.headers?.authorization; // 'Bearer ' + apiKey
+  if (authHeader) {
+    const args = authHeader.split(' ');
+    // Baarer ?
+    if (args.length !== 2 && args[0] !== 'Bearer') {
+      res.send(JSON.stringify({status: 'error', error: 'invalid Authorization header'}));
+      return;
+    }
+    data.apiKey = args[0];
+  }
+
   try {
     const taskId = taskWatcher(civitai.modelDownload(data.url, data), 'modelDownload', data);
     res.send(JSON.stringify({status: 'ok', taskId: taskId, timestamp: new Date()}));
   } catch (err) {
     res.send(JSON.stringify({status: 'error', error: err}));
+  }
+});
+
+app.get('/api/tasks/:taskid', (req, res) => {
+  const taskId = req.params.taskid;
+  if (tasks[taskId]) {
+    res.send(JSON.stringify(tasks[taskId]));
+  } else {
+    res.send(JSON.stringify({status: 'error', error: 'task not found'}));
   }
 });
 
