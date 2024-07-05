@@ -4,24 +4,24 @@
   "defaultModelType": "Pony",
   "html": {
       "dir": "/opt/ai/web/html/civitai/",
-      "css": "/base.css",
-      "js": "/base.js"
+      "css": "./static/css",
+      "js": "./static/js"
   },
   "lora": {
-    "dir": "/opt/ai/models/lora",
+    "dir": "./models/lora",
     "hashfile": "./data/lora-hash.json"
   },
   "db": {
     "sqlite": "./data/db.sqlite3"
   },
-  "temp": "/opt/ai/models/download/",
+  "temp": "/temp",
   "output": {
-    "dir": "/opt/ai/models/",
+    "dir": "./data/models/",
     "modelhash": "./data/model-hash.json",
     "lorahash": "./data/loras-hash.json",
     "loradir": "{modelbase}/{type}/",
     "modeldir": "{modelbase}",
-    "response": "/opt/ai/models/lora.jsonl"
+    "response": "./data/models/lora.jsonl"
   },
   "mapper": {
     "SD 1.5": "sd15",

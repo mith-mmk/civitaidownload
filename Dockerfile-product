@@ -1,0 +1,10 @@
+FROM node:lts-alpine
+WORKDIR /app
+RUN apk add --no-cache git &&\
+    git clone --depth 1 --branch master https://github.com/mith-mmk/civitaidownload.git &&\
+    mv civitaidownload/* . &&\
+    mv /app/configs/config-sample.json /app/configs/config.json &&\
+    npm i --omit=dev
+EXPOSE 3000
+CMD ["npm", "start"]
+

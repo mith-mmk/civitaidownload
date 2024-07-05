@@ -1,0 +1,11 @@
+version: '3.9'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/docker/configs:/app/configs
+      - ./data/docker/data:/app/data
+      - f:/ai/models:/data/ai/models
+      - f:/Pi4/docker/web/html/civitai:/data/html/civitai/
