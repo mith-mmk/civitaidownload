@@ -102,42 +102,46 @@ async function modelDownload(url, opt) {
     case 'LORA':
     case 'LoCon':
     case 'DoRA':
-      outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
-      opt.hash = config?.output?.lorahash;
-      switch (conceptTag) {
-      case 'character':
-        responseJSON = {
-          W: 0.1,
-          C: opt.categories || [],
-          title: opt.title || '',
-          lora: `<lora:${filename.replace('.safetensors')}:0.8>`,
-          prompt: info.trainedWords[0] || '',
-          neg: '',
-          V: [opt.title || '', info.trainedWords[0] || '']
-        };
-        break;
-      case 'concept':
-      case 'poses':
-        responseJSON = {
-          W: 0.1,
-          C: opt.categories || [],
-          title: opt.title || '',
-          member: opt.member || '${member}',
-          V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`,
-          append: '',
-          neg: '',
-          multipy: 1
-        };
-        break;
-      default:
-        responseJSON = {
-          W: 0.1,
-          C: opt.categories || [],
-          title: opt.title || '',
-          V: `${info.trainedWords[0]} <lora:${filename.replace('.safetensors', '')}:0.8>`
-        };
+      {
+      // 拡張子を削除
+        const loraname = filename.substring(0, filename.lastIndexOf('.'));
+        outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
+        opt.hash = config?.output?.lorahash;
+        switch (conceptTag) {
+        case 'character':
+          responseJSON = {
+            W: 0.1,
+            C: opt.categories || [],
+            title: opt.title || '',
+            lora: `<lora:${loraname}:0.8>`,
+            prompt: info.trainedWords[0] || '',
+            neg: '',
+            V: [opt.title || '', info.trainedWords[0] || '']
+          };
+          break;
+        case 'concept':
+        case 'poses':
+          responseJSON = {
+            W: 0.1,
+            C: opt.categories || [],
+            title: opt.title || '',
+            member: opt.member || '${member}',
+            V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`,
+            append: '',
+            neg: '',
+            multipy: 1
+          };
+          break;
+        default:
+          responseJSON = {
+            W: 0.1,
+            C: opt.categories || [],
+            title: opt.title || '',
+            V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`
+          };
+        }
+        responseJSON = JSON.stringify(responseJSON);
       }
-      responseJSON = JSON.stringify(responseJSON);
       break;
     case 'VAE':
       outputDir = `${outputDir}/${mainDirectory}`;

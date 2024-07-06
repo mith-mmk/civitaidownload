@@ -185,6 +185,8 @@ app.get('/api/models', (req, res) => {
 app.get('/', (req, res) => {
   const staticPath = config?.server?.staticPath || 'public';
   const fs = require('fs');
+  console.log('request root');
+  console.log('server static path:', staticPath);
   let files = fs.readdirSync(staticPath);
   files = files.filter((file) => {
     return file.endsWith('.html');
@@ -201,7 +203,7 @@ app.get('/', (req, res) => {
   files.sort((a, b) => {
     return b.mtime - a.mtime;
   });
-
+  console.log('files:', files);
   const html = `
     <html>
       <head>
@@ -222,8 +224,12 @@ app.get('/css/:file', (req, res) => {
   const fs = require('fs');
   const file = req.params.file;
   const filePath = path.join(staticPath, file);
+  console.log(`request css file: /css${file}`);
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
+  } else {
+    res.status(404);
+    res.send('css file not found');
   }
 });
 
@@ -232,8 +238,12 @@ app.get('/js/:file', (req, res) => {
   const fs = require('fs');
   const file = req.params.file;
   const filePath = path.join(staticPath, file);
+  console.log(`request js file: /js${file}`);
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
+  } else {
+    res.status(404);
+    res.send('js file not found');
   }
 });
 
@@ -242,8 +252,12 @@ app.get('/:file', (req, res) => {
   const staticPath = config?.server?.staticPath || 'public';
   const file = req.params.file;
   const filePath = path.join(staticPath, file);
+  console.log(`request file: /${file}`);
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
+  } else {
+    res.status(404);
+    res.send('file not found');
   }
 });
 
