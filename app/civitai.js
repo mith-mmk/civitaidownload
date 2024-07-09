@@ -85,8 +85,12 @@ async function modelDownload(url, opt) {
     const modelName = info?.model?.name;
     const downloadFile = info.files.filter((file) => file.primary)[0];
 
-    const autoV2Hash = downloadFile.hashes.AutoV2.toLowerCase();
-    const sha256 = downloadFile.hashes.SHA256.toLowerCase();
+    const autoV2Hash = downloadFile.hashes.AutoV2 ? downloadFile.hashes.AutoV2.toLowerCase() : '';
+    const sha256 = downloadFile.hashes.SHA256 ? downloadFile.hashes.SHA256.toLowerCase() : '';
+    if (sha256 == '') {
+      console.log('SHA256 hash not found, force download');
+      opt.force = true;
+    }
     const filename = downloadFile.name;
     const modelType = info?.model?.type;
     console.log(`model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`);
@@ -296,12 +300,15 @@ async function modelDownload(url, opt) {
     if (opt.hash) {
       const hashtext = await fsPromises.readFile(opt.hash, 'utf8');
       const hash = JSON.parse(hashtext);
+      const v2hash = autoV2Hash == '' ? sha256sum.substring(0, 10) : autoV2Hash;
       if (autoV2Hash) {
         if (modelType == 'Checkpoint') {
           hash[autoV2Hash] = filebase;
         } else {
           hash[autoV2Hash] = filename;
         }
+      } else {
+        hash[v2hash] = filename;
       }
       await fsPromises.rename(opt.hash, opt.hash + '.bak');
       await fsPromises.writeFile(opt.hash, JSON.stringify(hash, null, 2));
