@@ -30,6 +30,44 @@ inputTool.appendChild(defaultCategory);
 const downText = document.createElement('div');
 downText.className = 'down-text';
 toolBox.appendChild(downText);
+const downloadButton = document.createElement('button');
+downloadButton.innerText = 'Download';
+downloadButton.addEventListener('click', (event) => {
+  console.log('clicked:', event.target);
+  const data = downText.innerText;
+  const blob = new Blob([data], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'download.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+toolBox.appendChild(downloadButton);
+
+const header = document.querySelector('header');
+const headrA = document.createElement('a');
+headrA.name = 'header';
+headrA.innerText = '';
+header.appendChild(headrA);
+
+const gotop = document.createElement('div');
+gotop.className = 'gotop';
+gotop.innerHTML = '<a href="#header">▲</a>';
+document.body.appendChild(gotop);
+
+/*
+window.addEventListener("scroll", function () {
+  var elm = document.querySelector('.gotop');
+  if(elm) {
+      if (document.body.scrollTop < 100) {
+          elm.style.display = "none"
+      } else {
+          elm.style.display = "block"
+      }
+  }
+});
+*/
 
 function createDownloadData() {
   console.log('createDownloadData');
@@ -45,6 +83,7 @@ function createDownloadData() {
   });
   downText.innerHTML = data;
 }
+
 
 const items = document.querySelectorAll('.item');
 items.forEach((item) => {

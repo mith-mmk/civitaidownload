@@ -124,3 +124,41 @@ details[open] {
   /* スクロールバーを表示 */
   overflow: scroll;
 }
+
+
+.gotop {
+  /* display: none; */
+  position: fixed;
+  bottom: 2rem;
+  right: 1rem;
+}
+
+.gotop a{
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-decoration: none;
+  font-size: 1.8em;
+  /* center */
+  line-height: 2;
+  text-align: center;
+/*  background-image: url('/icon/gotop.svg'); */
+  color: white;
+  background-color: darkgoldenrod;
+  width: 2em;
+  height: 2em;
+  border-radius: 50%;
+  opacity: 1.0;
+  animation: buttonflow 3s 1;
+  display: block;
+}
+
+@keyframes buttonflow {
+  from { opacity: 0; }
+  to { opacity: 100; }
+}
+
+.gotop a:hover {
+  opacity: 0.60;
+  color: grey;
+}
