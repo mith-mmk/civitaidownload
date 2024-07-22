@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* global document, console, Blob, URL */
 const toolBox = document.querySelector('.tool-box');
 const toolTable = document.createElement('table');
 toolTable.className = 'tool-table';
@@ -7,7 +7,7 @@ const thead = document.createElement('thead');
 const toolTr = document.createElement('tr');
 toolTable.appendChild(thead);
 thead.appendChild(toolTr);
-const headers = ['URL', 'title', 'category', 'TITLE']
+const headers = ['URL', 'title', 'category', 'TITLE'];
 headers.forEach((header) => {
   const th = document.createElement('th');
   th.innerText = header;
@@ -32,6 +32,7 @@ downText.className = 'down-text';
 toolBox.appendChild(downText);
 const downloadButton = document.createElement('button');
 downloadButton.innerText = 'Download';
+downloadButton.className = 'download-button';
 downloadButton.addEventListener('click', (event) => {
   console.log('clicked:', event.target);
   const data = downText.innerText;
@@ -44,10 +45,17 @@ downloadButton.addEventListener('click', (event) => {
   URL.revokeObjectURL(url);
 });
 toolBox.appendChild(downloadButton);
+const clearButton = document.createElement('button');
+clearButton.innerText = 'Clear';
+clearButton.className = 'clear-button';
+clearButton.addEventListener('click', (event) => {
+  console.log('clicked:', event.target);
+  clearDownloadData();
+});
+toolBox.appendChild(clearButton);
 
 const header = document.querySelector('header');
 const headrA = document.createElement('a');
-headrA.name = 'header';
 headrA.innerText = '';
 header.appendChild(headrA);
 
@@ -79,11 +87,23 @@ function createDownloadData() {
     const tds = tr.querySelectorAll('td');
     console.log('tds:', tds);
     console.log('data:', tds[0].innerText, tds[1].querySelector('input').value, tds[2].querySelector('input').value);
+    // eslint-disable-next-line max-len
     data += `<span>cget ${tds[0].innerText} '${tds[1].querySelector('input').value}' ${tds[2].querySelector('input').value}</span><br>`;
   });
   downText.innerHTML = data;
 }
 
+function clearDownloadData() {
+  downText.innerHTML = '';
+  // search checked
+  const titles = document.querySelectorAll('.title');
+  titles.forEach((title) => {
+    const checkElm = title.querySelector('.checked');
+    if (checkElm) {
+      checkElm.remove();
+    }
+  });
+}
 
 const items = document.querySelectorAll('.item');
 items.forEach((item) => {
@@ -93,8 +113,8 @@ items.forEach((item) => {
     console.log('title:', title.innerText);
     const link = title.querySelector('a').href;
     const tilteText = title.innerText;
-    
-    
+
+
     const trs = tbody.querySelectorAll('tr');
     let isExist = false;
     trs.forEach((tr) => {

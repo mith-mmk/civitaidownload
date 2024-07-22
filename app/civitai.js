@@ -7,6 +7,381 @@ const process = require('process');
 const path = require('path');
 const config = require('../configs/config.json');
 
+class Downloader {
+  constructor(maxThreads = 4) {
+    this.maxThreads = maxThreads;
+    this.threads = 0;
+    this.queue = [];
+    this.status = [];
+    for (let i = 0; i < maxThreads; i++) {
+      this.status.push({
+        status:'idle',
+        message: ''});
+    }
+  }
+
+  async download(url, opt) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({url, opt, resolve, reject});
+      this.run();
+    });
+  }
+
+  async run() {
+    // wait for threads
+    while (this.threads >= this.maxThreads) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const task = this.queue.shift();
+    if (task) {
+      this.modelDownload(task.url, task.opt, this.threads++).then((result) => {
+        task.resolve(result);
+      }).catch((e) => {
+        task.reject(e);
+      }).finally(() => {
+        this.setStatus(this.threads, {
+          status: 'idle',
+          message: ''
+        });
+        this.threads--;
+        this.run();
+      });
+    }
+  }
+
+  setStatus(threadNumber, status) {
+    this.status[threadNumber] = status;
+    for (let i = 0; i < this.status.length; i++) {
+      // stdout
+      process.stdout.write(`${i}: ${this.status[i].status} ${this.status[i].message}\n`);
+    }
+    process.stdout.write(`\x1b[${this.status.length}A`);
+  }
+
+  async modelDownload(url, opt, threadNumber) {
+    try {
+      this.setStatus(threadNumber, {
+        status: 'start',
+        message: url
+      });
+      const modelVersionId = url.split('/').pop();
+      this.setStatus(threadNumber, {
+        status: 'info',
+        message: `fetching model version info ${modelVersionId}`
+      });
+      const info = await getModelVersionInfo(modelVersionId, opt);
+      this.setStatus(threadNumber, {
+        status: 'info',
+        message: `fetching model info ${info.modelId}`
+      });
+      const modelInfo = await getModelInfo(info.modelId, opt);
+      const tags = modelInfo.tags;
+      let conceptTag = '';
+      for (let i = 0; i < tags.length; i++) {
+        const tag = tags[i];
+        if (baseTag.includes(tag)) {
+          conceptTag = tag;
+          break;
+        }
+      }
+      // opt.resume = true;
+      const baseModel = config?.mapper[info.baseModel] || info.baseModel;
+      const modelName = info?.model?.name;
+      const downloadFile = info.files.filter((file) => file.primary)[0];
+
+      const autoV2Hash = downloadFile.hashes.AutoV2 ? downloadFile.hashes.AutoV2.toLowerCase() : '';
+      const sha256 = downloadFile.hashes.SHA256 ? downloadFile.hashes.SHA256.toLowerCase() : '';
+      if (sha256 == '') {
+        this.setStatus(threadNumber, {
+          status: 'warning',
+          message: 'SHA256 hash not found, force download'
+        });
+        opt.force = true;
+      }
+      const filename = downloadFile.name;
+      const modelType = info?.model?.type;
+      this.setStatus(threadNumber, {
+        status: 'info',
+        message: `model: ${modelName} baseModel: ${baseModel} conceptTag: ${conceptTag}`
+      });
+      const mainDirectory = config?.mapper[modelType] || modelType;
+      const baseModelDirectory = config?.mapper[baseModel] || baseModel;
+      const subDirectory = config?.mapper[conceptTag] || conceptTag;
+      let outputDir = opt?.output || config?.output?.dir || './data';
+      let responseJSON = null;
+      opt.response = opt.response || config?.output?.response;
+
+      // check modelType
+      switch (modelType) {
+      case 'LORA':
+      case 'LoCon':
+      case 'DoRA':
+        {
+        // 拡張子を削除
+          const loraname = filename.substring(0, filename.lastIndexOf('.'));
+          outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}/${subDirectory}`;
+          opt.hash = config?.output?.lorahash;
+          switch (conceptTag) {
+          case 'character':
+            responseJSON = {
+              W: 0.1,
+              C: opt.categories || [],
+              title: opt.title || '',
+              lora: `<lora:${loraname}:0.8>`,
+              prompt: info.trainedWords[0] || '',
+              neg: '',
+              V: info.trainedWords || []
+            };
+            break;
+          case 'concept':
+          case 'poses':
+            responseJSON = {
+              W: 0.1,
+              C: opt.categories || [],
+              title: opt.title || '',
+              member: opt.member || '${member}',
+              V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`,
+              append: '',
+              neg: '',
+              multipy: 1
+            };
+            break;
+          default:
+            responseJSON = {
+              W: 0.1,
+              C: opt.categories || [],
+              title: opt.title || '',
+              V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`
+            };
+          }
+          responseJSON = JSON.stringify(responseJSON);
+        }
+        break;
+      case 'VAE':
+        outputDir = `${outputDir}/${mainDirectory}`;
+        opt.hash = config?.output?.vaehash;
+        break;
+      case 'Checkpoint':
+        outputDir = `${outputDir}/${mainDirectory}/${baseModelDirectory}`;
+        opt.hash = config?.output?.modelhash;
+        break;
+      default:
+        outputDir = `${outputDir}/${mainDirectory}`;
+        opt.hash = config?.output?.modelhash;
+        break;
+      }
+      this.setStatus(threadNumber, {
+        status: 'info',
+        message: `download ${filename} to ${outputDir}`
+      });
+
+      // check hash file
+      if (opt.hash) {
+        try {
+          if (!fs.existsSync(opt.hash)) {
+            fs.writeFileSync(opt.hash, '{}');
+          }
+          let hash = await fsPromises.readFile(opt.hash, 'utf8');
+          hash = JSON.parse(hash);
+          console.log(`hash[${autoV2Hash}]: ${autoV2Hash}`);
+          if (hash) {
+            if (hash[autoV2Hash] != null) {
+              this.setStatus(threadNumber, {
+                status: 'info',
+                message: `always download ${filename}`
+              });
+              this.setStatus(threadNumber, {
+                status: 'ok',
+                message: `always download ${filename}`
+              });
+              return;
+            }
+          }
+        } catch (e) {
+          this.setStatus(threadNumber, {
+            status: 'error',
+            message: 'hash file not found'
+          });
+          throw new Error('hash file not found');
+        }
+      }
+
+      // create temp filename
+      const file = path.join(outputDir, filename);
+      const tempDir = opt?.temp || config?.temp ||'./temp';
+      fsPromises.mkdir(tempDir, {recursive: true});
+      this.setStatus(threadNumber, {
+        status: 'info',
+        message: `download ${tempDir} to ${autoV2Hash}`
+      });
+      const tempFile = path.join(tempDir, `tmp_${autoV2Hash}`);
+
+      // download file
+      const downloadHeaders = createHeaders(opt);
+      const filehash = crypto.createHash('sha256');
+      const isExists = fs.existsSync(tempFile);
+      let received = 0;
+
+      if (isExists && opt.resume) {
+        this.setStatus(threadNumber, {
+          status: 'info',
+          message: `file ${tempFile} is already exists try resuming download`
+        });
+        const f = await fsPromises.open(tempFile, 'r');
+        const stream = f.createReadStream();
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const chunk = stream.read(1024 * 1024);
+          if (chunk) {
+            filehash.update(chunk);
+            received += chunk.length;
+          } else {
+            break;
+          }
+        }
+        this.setStatus(threadNumber, {
+          status: 'info',
+          message: `received ${received} bytes`
+        });
+        await f.close();
+        downloadHeaders['Range'] = `bytes=${received}-`;
+      }
+      const response = await fetch(url, {headers: downloadHeaders});
+      if (!response.ok) {
+        const error = await response.text();
+        if (response.status == 416) {
+          this.setStatus(threadNumber, {
+            status: 'info',
+            message: 'file is already downloaded'
+          });
+        } else {
+          this.setStatus(threadNumber, {
+            status: 'error',
+            message: `HTTP error! status: ${response.status} ${error}`
+          });
+          throw new Error(`HTTP error! status: ${response.status} ${error}`);
+        }
+      } else {
+        const contentLength = response.headers.get('Content-Length');
+        const reader = response.body.getReader();
+        const total = parseInt(contentLength, 10);
+
+        const f = isExists ? await fsPromises.open(tempFile, 'a') :  await fsPromises.open(tempFile, 'w');
+        const startTime = new Date().getTime();
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) {
+            break;
+          }
+          filehash.update(value);
+          await f.write(value);
+          received += value.length;
+          //
+          const lapTime = new Date().getTime();
+          const elapsedTime = (lapTime - startTime) / 1000;
+          this.setStatus(threadNumber, {
+            status: 'downloading',
+            // eslint-disable-next-line max-len
+            message: `Received ${received} of ${total} ${Math.floor(received / total * 100)}% in ${elapsedTime} seconds`});
+        }
+        await f.close();
+      }
+      const sha256sum = filehash.digest('hex').toLowerCase();
+      if ((sha256sum != sha256) && !opt.force) {
+        this.setStatus(threadNumber, {
+          status: 'error',
+          message: `hash error ${sha256} != ${sha256sum}`
+        });
+        fs.unlink(tempFile);
+        throw new Error(`hash error ${sha256} != ${sha256sum}`);
+      }
+      process.stdout.write('\n');
+      const filebase = filename.substring(0, filename.lastIndexOf('.'));
+
+      if (opt.response && responseJSON != null) {
+        try {
+          await fsPromises.appendFile(opt.response, responseJSON + '\n');
+        } catch (e) {
+          this.setStatus(threadNumber, {
+            status: 'warning',
+            message: `response file ${opt.responce} is not found`}
+          );
+        }
+      }
+
+      // save info file
+      await fsPromises.mkdir(outputDir, {recursive: true});
+      const infoFile = filebase + '.civitai.info';
+      await fsPromises.writeFile(path.join(outputDir, infoFile), JSON.stringify(info, null, 2));
+      this.setStatus(threadNumber, `info file saved ${infoFile}`);
+
+      // save preview image
+      const imageFile = filebase + '.preview.png';
+      const images = info.images.filter((image) => image.type == 'image');
+      const imageUrl = images[0]?.url.replace('.jpeg', '.png');
+      this.setStatus(threadNumber, `imageUrl: ${imageUrl}`);
+      try {
+        const headers = createHeaders(opt);
+        const imageResponse = await fetch(imageUrl, {headers: headers});
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        await fsPromises.writeFile(path.join(outputDir, imageFile), buffer);
+        this.setStatus(threadNumber, `preview downloaded ${file}`);
+      } catch (e) {
+        this.setStatus(threadNumber, 'preview download error:', e);
+      }
+
+      // move model file
+      let renameCount = 0;
+      let saveFile = file;
+      while (fs.existsSync(saveFile)) {
+        saveFile = `${filebase}_${++renameCount}${path.extname(file)}`;
+        saveFile = path.join(outputDir, saveFile);
+      }
+      await fsPromises.rename(tempFile, saveFile);
+      this.setStatus(threadNumber, 'responseJSON:', responseJSON);
+
+      // update hash file
+      if (opt.hash) {
+        const hashtext = await fsPromises.readFile(opt.hash, 'utf8');
+        const hash = JSON.parse(hashtext);
+        const v2hash = autoV2Hash == '' ? sha256sum.substring(0, 10) : autoV2Hash;
+        if (autoV2Hash) {
+          if (modelType == 'Checkpoint') {
+            hash[autoV2Hash] = filebase;
+          } else {
+            hash[autoV2Hash] = filename;
+          }
+        } else {
+          hash[v2hash] = filename;
+        }
+        await fsPromises.rename(opt.hash, opt.hash + '.bak');
+        await fsPromises.writeFile(opt.hash, JSON.stringify(hash, null, 2));
+      }
+      this.setStatus(threadNumber, {
+        status: 'ok',
+        filename: saveFile
+      });
+      return {
+        status: 'ok',
+        filename: saveFile
+      };
+    } catch (e) {
+      console.log('Error:', e);
+      this.setStatus(threadNumber, {
+        status: 'error',
+        error: e
+      });
+      return {
+        status: 'error',
+        error: e
+      };
+    }
+  }
+
+}
+
 /*
 const requireOptions = {
   // Checkpoint, TextualInversion, Hypernetwork, AestheticGradient, LORA, Controlnet, Poses
@@ -120,7 +495,7 @@ async function modelDownload(url, opt) {
             lora: `<lora:${loraname}:0.8>`,
             prompt: info.trainedWords[0] || '',
             neg: '',
-            V: [opt.title || '', info.trainedWords[0] || '']
+            V: info.trainedWords || []
           };
           break;
         case 'concept':
@@ -581,3 +956,4 @@ exports.getModels = getModels;
 exports.createHtml = createHtml;
 exports.createHtmlFromItems = createHtmlFromItems;
 exports.modelDownload = modelDownload;
+exports.Downloader = Downloader;

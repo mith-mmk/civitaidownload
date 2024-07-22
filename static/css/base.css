@@ -30,6 +30,36 @@ h2 {
   overflow: hidden;
 }
 
+.clear-button {
+  display: block;
+  margin: 0 auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #f9ffc7;
+  color: #333;
+  text-align: center;
+  cursor: pointer;
+}
+
+.clear-button:hover {
+  background-color: #e7ff5e;
+}
+
+.download-button {
+  display: block;
+  margin: 0 auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #9ecbff;
+  color: #333;
+  text-align: center;
+  cursor: pointer;
+}
+
+.clear-button:hover {
+  background-color: #4da0ff;
+}
+
 .title .checked {
   color: red;
   font-weight: bold;
@@ -152,6 +182,7 @@ details[open] {
   animation: buttonflow 3s 1;
   display: block;
 }
+
 
 @keyframes buttonflow {
   from { opacity: 0; }
