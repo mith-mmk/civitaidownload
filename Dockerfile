@@ -2,7 +2,12 @@ FROM node:lts-alpine
 WORKDIR /app
 COPY . .
 #RUN mv config/config-sample.json config/config.json
-RUN npm i --omit=dev
+#add git 
+RUN apk update && \
+    apk add git && \
+    git clone --depth 1 git@github.com:mith-mmk/civitaidownload.git && \
+    mv civitaidownload/* . && \
+    npm i --omit=dev
 EXPOSE 3000
 CMD ["npm", "start"]
 
