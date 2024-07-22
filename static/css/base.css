@@ -31,7 +31,7 @@ h2 {
 }
 
 .clear-button {
-  display: block;
+  display: inline-block;
   margin: 0 auto;
   padding: 10px;
   border: 1px solid #ccc;
@@ -46,7 +46,7 @@ h2 {
 }
 
 .download-button {
-  display: block;
+  display: inline-block;
   margin: 0 auto;
   padding: 10px;
   border: 1px solid #ccc;
