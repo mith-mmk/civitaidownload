@@ -65,6 +65,7 @@ toolBox.appendChild(clearButton);
 
 const header = document.querySelector('header');
 const headrA = document.createElement('a');
+headrA.name = 'header';
 headrA.innerText = '';
 header.appendChild(headrA);
 
