@@ -2,6 +2,11 @@
 
 // webstorage
 const storage = window.localStorage;
+let stragedata = storage.getItem('downloadData');
+if (!stragedata) {
+  stragedata = '';
+  storage.setItem('downloadData', stragedata);
+}
 
 const toolBox = document.querySelector('.tool-box');
 const toolTable = document.createElement('table');
@@ -34,9 +39,8 @@ inputTool.appendChild(defaultCategory);
 const downText = document.createElement('div');
 downText.className = 'down-text';
 // from webstorage
-const data = storage.getItem('downloadData');
-if (data) {
-  downText.innerHTML = data;
+if (stragedata) {
+  downText.innerHTML = stragedata;
 }
 toolBox.appendChild(downText);
 const downloadButton = document.createElement('button');
@@ -108,7 +112,7 @@ function createDownloadData() {
 }
 
 function clearDownloadData() {
-  downText.innerHTML = '';
+  downText.innerHTML = stragedata;
   // search checked
   const titles = document.querySelectorAll('.title');
   titles.forEach((title) => {
