@@ -5,7 +5,7 @@ COPY . .
 #add git 
 RUN apk update && \
     apk add git && \
-    git clone --depth 1 git@github.com:mith-mmk/civitaidownload.git && \
+    git clone --depth 1 https://github.com/mith-mmk/civitaidownload.git && \
     mv civitaidownload/* . && \
     npm i --omit=dev
 EXPOSE 3000

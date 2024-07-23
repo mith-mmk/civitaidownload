@@ -1,4 +1,8 @@
-/* global document, console, Blob, URL */
+/* global document, console, Blob, URL, window */
+
+// webstorage
+const storage = window.localStorage;
+
 const toolBox = document.querySelector('.tool-box');
 const toolTable = document.createElement('table');
 toolTable.className = 'tool-table';
@@ -29,6 +33,11 @@ defaultCategory.value = '';
 inputTool.appendChild(defaultCategory);
 const downText = document.createElement('div');
 downText.className = 'down-text';
+// from webstorage
+const data = storage.getItem('downloadData');
+if (data) {
+  downText.innerHTML = data;
+}
 toolBox.appendChild(downText);
 const downloadButton = document.createElement('button');
 downloadButton.innerText = 'Download';
@@ -82,6 +91,8 @@ function createDownloadData() {
   const tbody = toolTable.querySelector('tbody');
   const trs = tbody.querySelectorAll('tr');
   let data = '';
+  // from webstorage
+  data += storage.getItem('downloadData');
   trs.forEach((tr) => {
     console.log('tr:', tr);
     const tds = tr.querySelectorAll('td');
@@ -91,6 +102,8 @@ function createDownloadData() {
     data += `<span>cget ${tds[0].innerText} '${tds[1].querySelector('input').value}' ${tds[2].querySelector('input').value}</span><br>`;
   });
   downText.innerHTML = data;
+  // to webstorage
+  storage.setItem('downloadData', data);
 }
 
 function clearDownloadData() {
@@ -103,6 +116,8 @@ function clearDownloadData() {
       checkElm.remove();
     }
   });
+  // clear webstorage
+  storage.clear();
 }
 
 const items = document.querySelectorAll('.item');
