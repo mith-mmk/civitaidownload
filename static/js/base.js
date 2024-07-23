@@ -95,9 +95,7 @@ function createDownloadData() {
   console.log('createDownloadData');
   const tbody = toolTable.querySelector('tbody');
   const trs = tbody.querySelectorAll('tr');
-  let data = '';
-  // from webstorage
-  data += storage.getItem('downloadData');
+  let data = stragedata;
   trs.forEach((tr) => {
     console.log('tr:', tr);
     const tds = tr.querySelectorAll('td');
@@ -112,7 +110,7 @@ function createDownloadData() {
 }
 
 function clearDownloadData() {
-  downText.innerHTML = stragedata;
+  downText.innerHTML = '';
   // search checked
   const titles = document.querySelectorAll('.title');
   titles.forEach((title) => {
