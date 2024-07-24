@@ -127,7 +127,7 @@ class Downloader {
               W: 0.1,
               C: opt.categories || [],
               title: opt.title || '',
-              lora: `<lora:${loraname}:0.8>`,
+              lora: `<lora:${loraname}:0.7>`,
               prompt: info.trainedWords[0] || '',
               neg: '',
               V: info.trainedWords || []
@@ -140,7 +140,7 @@ class Downloader {
               C: opt.categories || [],
               title: opt.title || '',
               member: opt.member || '${member}',
-              V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`,
+              V: `${info.trainedWords[0]} <lora:${loraname}:0.7>`,
               append: '',
               neg: '',
               multipy: 1
@@ -151,7 +151,7 @@ class Downloader {
               W: 0.1,
               C: opt.categories || [],
               title: opt.title || '',
-              V: `${info.trainedWords[0]} <lora:${loraname}:0.8>`
+              V: `${info.trainedWords[0]} <lora:${loraname}:0.7>`
             };
           }
           responseJSON = JSON.stringify(responseJSON);
