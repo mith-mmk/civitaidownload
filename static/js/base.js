@@ -38,6 +38,7 @@ defaultCategory.value = '';
 inputTool.appendChild(defaultCategory);
 const downText = document.createElement('div');
 downText.className = 'down-text';
+downText.contentEditable = true;
 // from webstorage
 if (stragedata) {
   downText.innerHTML = stragedata;
@@ -96,6 +97,7 @@ function createDownloadData() {
   const tbody = toolTable.querySelector('tbody');
   const trs = tbody.querySelectorAll('tr');
   let data = stragedata;
+
   trs.forEach((tr) => {
     console.log('tr:', tr);
     const tds = tr.querySelectorAll('td');
@@ -120,6 +122,7 @@ function clearDownloadData() {
     }
   });
   // clear webstorage
+  storage.setItem('downloadData', '');
   storage.clear();
 }
 
