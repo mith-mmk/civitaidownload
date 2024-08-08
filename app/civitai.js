@@ -853,7 +853,7 @@ async function getModels(opt) {
 function createHtmlFromItems(items) {
   const html = items.map((item) => {
     const modelVersion = item?.modelVersions[0];
-    const civitaiUrl = `https://civitai.com/models/${item.modelId}`;
+    const civitaiUrl = `https://civitai.com/models/${item.id}`;
     //const url = modelVersion?.downloadUrl;
     const images = modelVersion?.images.filter((image) => image.type == 'image');
     const imageUrl = images[0]?.url;
