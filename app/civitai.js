@@ -853,7 +853,8 @@ async function getModels(opt) {
 function createHtmlFromItems(items) {
   const html = items.map((item) => {
     const modelVersion = item?.modelVersions[0];
-    const url = modelVersion?.downloadUrl;
+    const civitaiUrl = `https://civitai.com/models/${item.modelId}`;
+    //const url = modelVersion?.downloadUrl;
     const images = modelVersion?.images.filter((image) => image.type == 'image');
     const imageUrl = images[0]?.url;
     // console.log('images:', JSON.stringify(modelVersion?.images, null, 2));
@@ -864,7 +865,7 @@ function createHtmlFromItems(items) {
         <div class="image"><img src="${imageUrl}" loading="lazy" /></div>
         <div class="inner">
           <div class="title">
-            <a href="${url}" target="_blank"><h2>${item.name}</h2></a>
+            <a href="${civitaiUrl}" target="_blank"><h2>${item.name}</h2></a>
           </div>
           <div class="footer">
             <div class="version">version ${modelVersion.name} published at: ${publishedAt}</div>
