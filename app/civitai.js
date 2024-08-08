@@ -854,7 +854,7 @@ function createHtmlFromItems(items) {
   const html = items.map((item) => {
     const modelVersion = item?.modelVersions[0];
     const civitaiUrl = `https://civitai.com/models/${item.id}`;
-    //const url = modelVersion?.downloadUrl;
+    const url = modelVersion?.downloadUrl;
     const images = modelVersion?.images.filter((image) => image.type == 'image');
     const imageUrl = images[0]?.url;
     // console.log('images:', JSON.stringify(modelVersion?.images, null, 2));
@@ -866,6 +866,7 @@ function createHtmlFromItems(items) {
         <div class="inner">
           <div class="title">
             <a href="${civitaiUrl}" target="_blank"><h2>${item.name}</h2></a>
+            <a href="${url}" style="display: none;" class="download"><h2>${item.id}</h2></a>
           </div>
           <div class="footer">
             <div class="version">version ${modelVersion.name} published at: ${publishedAt}</div>
@@ -900,7 +901,7 @@ function createHtmlFromItems(items) {
             <div class="other-version" style="display:none">
               <details>
               <summary>Model Version ${name}</summary>
-              <div class="more-inner">        
+              <div class="more-inner">
                 <a href="${url}" target="_blank">${name}</h2></a>
                 <div>version ${name} Published at: ${publishedAt}</div>
                 <div class="tags">${item.tags.join(', ')}</div>

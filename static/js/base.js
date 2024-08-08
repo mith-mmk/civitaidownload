@@ -135,7 +135,7 @@ items.forEach((item) => {
     console.log('clicked:', event.target.src);
     const title = item.querySelector('.title');
     console.log('title:', title.innerText);
-    const link = title.querySelector('a').href;
+    const link = title.querySelector('a.download').href;
     const tilteText = title.innerText;
 
 
