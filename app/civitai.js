@@ -861,7 +861,7 @@ function createHtmlFromItems(items) {
     const trainedWords = modelVersion?.trainedWords || [];
     let html = `
       <div class="item">
-        <div class="image"><img src="${imageUrl}"/></div>
+        <div class="image"><img src="${imageUrl}" loading="lazy" /></div>
         <div class="inner">
           <div class="title">
             <a href="${url}" target="_blank"><h2>${item.name}</h2></a>

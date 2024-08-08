@@ -109,6 +109,7 @@ function createDownloadData() {
   downText.innerHTML = data;
   // to webstorage
   storage.setItem('downloadData', data);
+  stragedata = data;
 }
 
 function clearDownloadData() {
@@ -124,6 +125,8 @@ function clearDownloadData() {
   // clear webstorage
   storage.setItem('downloadData', '');
   storage.clear();
+  stragedata = '';
+
 }
 
 const items = document.querySelectorAll('.item');
