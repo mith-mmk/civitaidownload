@@ -39,6 +39,11 @@ inputTool.appendChild(defaultCategory);
 const downText = document.createElement('div');
 downText.className = 'down-text';
 downText.contentEditable = true;
+downText.addEventListener('input', (event) => {
+  console.log('input:', event.target);
+  stragedata = event.target.innerText;
+  storage.setItem('downloadData', stragedata);
+});
 // from webstorage
 if (stragedata) {
   downText.innerHTML = stragedata;
@@ -136,7 +141,10 @@ items.forEach((item) => {
     console.log('title:', title.innerText);
     const link = title.querySelector('a.download').href;
     const tilteText = title.innerText;
-
+    title.addEventListener('click', (event) => {
+      console.log('clicked:', event.target);
+      event.stopPropagation();
+    });
 
     const trs = tbody.querySelectorAll('tr');
     let isExist = false;
