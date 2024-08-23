@@ -63,7 +63,7 @@ async function run() {
         console.error('Error:', err);
       }
     }
-    const saveText = failed.join('\n');
+    const saveText = failed.join('\n') + '\n';
     if (failed.length > 0) {
       const failedFile = path.join(directory, 'failed.txt');
       if (fs.existsSync(failedFile)) {

@@ -1,7 +1,7 @@
 {
   "apiKey": "your-api-key-here",
   "loraType": ["LORA", "LoCon", "DoRA"],
-  "defaultModelType": "Pony",
+  "defaultModelType": ["Pony", "Flux.1 D", "Flux.1 S"],
   "html": {
       "dir": "/opt/ai/web/html/civitai/",
       "css": "./static/css",
@@ -28,6 +28,8 @@
     "SDXL 1.0": "xl",
     "Pony": "pony",
     "pony": "pony",
+    "Flux.1 D": "flux",
+    "Flux.1 S": "flux",
     "Checkpoint": "Stable-Diffusion",
     "LoRA": "Lora",
     "DoRA": "Lora",
