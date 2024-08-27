@@ -126,7 +126,7 @@ class Downloader {
             responseJSON = {
               W: 0.1,
               C: opt.categories || [],
-              series: opt.series|| '',
+              series: opt.series || '',
               title: opt.title || '',
               lora: `<lora:${loraname}:0.7>`,
               prompt: info.trainedWords[0] || '',
@@ -492,6 +492,7 @@ async function modelDownload(url, opt) {
           responseJSON = {
             W: 0.1,
             C: opt.categories || [],
+            series: opt.series || '',
             title: opt.title || '',
             lora: `<lora:${loraname}:0.7>`,
             prompt: info.trainedWords[0] || '',

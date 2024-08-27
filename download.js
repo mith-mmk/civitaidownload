@@ -50,6 +50,9 @@ async function run() {
       if (parts.length > 3) {
         opt.categories = parts[3].split(',');
       }
+      if (parts.length > 4) {
+        opt.series = parts[4];
+      }
       // console.log('opt:', opt);
       try {
         const result = await civitai.modelDownload(url, opt);
@@ -99,7 +102,7 @@ function argMapper(args) {
 
   // convert array to string
   // single args
-  const singleArgs = ['temp', 'output', 'title'];
+  const singleArgs = ['temp', 'output', 'title', 'series'];
   for (const key in argMap) {
     if (singleArgs.includes(key)) {
       argMap[key] = argMap[key][0];
