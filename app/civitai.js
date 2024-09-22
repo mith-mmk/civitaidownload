@@ -443,6 +443,10 @@ async function getModelInfo(modelId, opt) {
  * @param {string} opt.member     private response member name
  */
 async function modelDownload(url, opt) {
+  const downloader = new Downloader();
+  await downloader.download(url, opt);
+/*
+  const modelVersionId = url.split('/').pop();
   try {
     const modelVersionId = url.split('/').pop();
     const info = await getModelVersionInfo(modelVersionId, opt);
@@ -701,7 +705,9 @@ async function modelDownload(url, opt) {
       error: e
     };
   }
+*/
 }
+
 
 async function getPage(url, headers={}) {
   const response = await fetch(url, {headers: headers});
@@ -849,7 +855,6 @@ async function getModels(opt) {
       error: e
     };
   }
-
 }
 
 function createHtmlFromItems(items) {
