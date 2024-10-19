@@ -61,10 +61,8 @@ async function run() {
       try {
         const result = await civitai.modelDownload(url, opt);
         console.log('result:', result);
-        if (result) {
-          if (result.error) {
-            failed.push(line);
-          }
+        if (!result) {
+          failed.push(line);
         }
       } catch (err) {
         console.error('catch line:', line);
