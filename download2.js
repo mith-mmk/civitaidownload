@@ -29,8 +29,6 @@ async function run() {
     const directory = path.dirname(url);
     const lines = batchText.split('\n');
     const failed = [];
-    const downloader = new civitai.CivitaiDownloader();
-    const tasks = [];
     for (const line of lines) {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
@@ -52,23 +50,23 @@ async function run() {
       if (parts.length > 3) {
         opt.categories = parts[3].split(',');
       }
-      // console.log('opt:', opt);
-
-      const task = downloader.modelDownload(url, opt);
-      tasks.push({
-        task: task,
-        line: line
-      });
-    }
-    tasks.forEach(async (task) => {
-      const result = await task.task;
-      if (result) {
-        if (result.error) {
-          failed.push(task.line);
-        }
+      if (parts.length > 4) {
+        opt.series = parts[4];
       }
-    });
-    const saveText = failed.join('\n');
+      // console.log('opt:', opt);
+      try {
+        const result = await civitai.modelDownload(url, opt);
+        if (result) {
+          if (result.error) {
+            failed.push(line);
+          }
+        }
+      } catch (err) {
+        failed.push(line);
+        console.error('Error:', err);
+      }
+    }
+    const saveText = failed.join('\n') + '\n';
     if (failed.length > 0) {
       const failedFile = path.join(directory, 'failed.txt');
       if (fs.existsSync(failedFile)) {
@@ -104,7 +102,7 @@ function argMapper(args) {
 
   // convert array to string
   // single args
-  const singleArgs = ['temp', 'output', 'title'];
+  const singleArgs = ['temp', 'output', 'title', 'series'];
   for (const key in argMap) {
     if (singleArgs.includes(key)) {
       argMap[key] = argMap[key][0];

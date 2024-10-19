@@ -58,15 +58,18 @@ async function run() {
         const result = await civitai.modelDownload(url, opt);
         if (result) {
           if (result.error) {
+            console.error('Error:', result.error, 'line:', line);
             failed.push(line);
           }
         }
       } catch (err) {
+        console.error('Error:', err, 'line:', line);
         failed.push(line);
         console.error('Error:', err);
       }
     }
     const saveText = failed.join('\n') + '\n';
+    console.log('saveText:', saveText);
     if (failed.length > 0) {
       const failedFile = path.join(directory, 'failed.txt');
       if (fs.existsSync(failedFile)) {
