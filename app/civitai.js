@@ -625,7 +625,8 @@ function createHtmlFromItems(items) {
             <a href="${url}" style="display: none;" class="download"><h2>${item.id}</h2></a>
           </div>
           <div class="footer">
-            <div class="version">version ${modelVersion.name} published at: ${publishedAt}</div>
+            <div class="version">${modelVersion.availability} version ${modelVersion.name} 
+            published at: ${publishedAt}</div>
             <details>
             <summary>Tags</summary>
             <div class="tags">${item.tags.join(', ')}</div>
