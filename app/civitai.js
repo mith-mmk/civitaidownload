@@ -364,23 +364,16 @@ class Downloader {
         status: 'ok',
         filename: saveFile
       });
-      return {
-        status: 'ok',
-        filename: saveFile
-      };
+      return true;
     } catch (e) {
       console.log('Error:', e);
       this.setStatus(threadNumber, {
         status: 'error',
         error: e
       });
-      return {
-        status: 'error',
-        error: e
-      };
+      return false;
     }
   }
-
 }
 
 /*
@@ -444,7 +437,7 @@ async function getModelInfo(modelId, opt) {
  */
 async function modelDownload(url, opt) {
   const downloader = new Downloader();
-  await downloader.download(url, opt);
+  return await downloader.download(url, opt);
 }
 
 async function modelDownloadAll(urls, opts) {

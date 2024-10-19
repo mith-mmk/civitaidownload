@@ -19,8 +19,13 @@ async function run() {
     return;
   }
   opt.apiKey = opt.apiKey || config.apiKey;
+  const failed = [];
   if (url.startsWith('http')) {
-    await civitai.modelDownload(url, opt);
+    try {
+      await civitai.modelDownload(url, opt);
+    } catch (err) {
+      console.error('Error:', err);
+    }
   } else {
     // batch download
     // [command] url (title) (categories)
@@ -28,7 +33,6 @@ async function run() {
     const batchText = fs.readFileSync(url, 'utf8');
     const directory = path.dirname(url);
     const lines = batchText.split('\n');
-    const failed = [];
     for (const line of lines) {
       console.log('line:', line);
       // spaceで分割するが、 ''でくくられた部分はそのまま
@@ -56,14 +60,14 @@ async function run() {
       // console.log('opt:', opt);
       try {
         const result = await civitai.modelDownload(url, opt);
+        console.log('result:', result);
         if (result) {
           if (result.error) {
-            console.error('Error:', result.error, 'line:', line);
             failed.push(line);
           }
         }
       } catch (err) {
-        console.error('Error:', err, 'line:', line);
+        console.error('catch line:', line);
         failed.push(line);
         console.error('Error:', err);
       }
