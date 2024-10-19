@@ -471,10 +471,6 @@ function filterItems(items, baseModel) {
   const filteredItems = items.filter((item) => {
     const modelVersions = item.modelVersions;
     const newModelVersions = modelVersions.filter(modelVersion => {
-      // availability == 'Public'
-      if (modelVersion.availability != 'Public') {
-        return false;
-      }
       return baseModel.includes(modelVersion.baseModel);
     });
     item.modelVersions = newModelVersions;
