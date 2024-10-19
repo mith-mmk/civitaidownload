@@ -65,9 +65,7 @@ async function run() {
           failed.push(line);
         }
       } catch (err) {
-        console.error('catch line:', line);
         failed.push(line);
-        console.error('Error:', err);
       }
     }
     const saveText = failed.join('\n') + '\n';
