@@ -195,7 +195,7 @@ class Downloader {
                 status: 'ok',
                 message: `always download ${filename}`
               });
-              return;
+              return true;
             }
           }
         } catch (e) {
@@ -255,6 +255,7 @@ class Downloader {
             status: 'info',
             message: 'file is already downloaded'
           });
+          return true;
         } else {
           this.setStatus(threadNumber, {
             status: 'error',

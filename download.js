@@ -4,16 +4,22 @@ const path = require('path');
 const config = require('./configs/config.json');
 const civitai = require('./app/civitai.js');
 
-run();
 
-// node.js only
-async function run() {
+
+runAll();
+
+async function runAll() {
   if (typeof window !== 'undefined') {
     console.log('This is not node.js');
     return;
   }
   const opt = argMapper(process.argv.slice(2)) || {query: 'fate', maxNumber: 10};
   const url = opt.url;
+  run(url, opt);
+}
+
+// node.js only
+async function run(url, opt) {
   if (!url) {
     console.log('url is required');
     return;
