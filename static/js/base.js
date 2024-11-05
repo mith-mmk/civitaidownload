@@ -125,7 +125,8 @@ class DownloadEditor {
       if (!storagedata) {
         return;
       }
-      storagedata.forEach((item) => {
+      const array = Object.keys(storagedata).map((key) => storagedata[key]);
+      array.forEach((item) => {
         data += `cget '${item.url}' '${item.title || ''}' '${item.category || ''}' '${item.series || ''}'\n`;
       });
       const blob = new Blob([data], {type: 'text/plain'});
