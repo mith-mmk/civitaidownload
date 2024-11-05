@@ -28,6 +28,9 @@ class DownloadEditor {
   }
 
   remakeTbody(storagedata) {
+    if (!storagedata) {
+      return;
+    }
     this.clearTbody();
     storagedata.forEach((item) => {
       const tr = document.createElement('tr');
