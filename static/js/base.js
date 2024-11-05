@@ -30,6 +30,7 @@ class DownloadEditor {
 
   updateStorage() {
     document.addEventListener('storage', (event) => {
+      console.log('Storage event fired:', event);
       if (event.key === 'download') {
         console.log('new storage:', event.newValue);
         this.remakeTbody(event.newValue);
