@@ -10,6 +10,7 @@ class DownloadEditor {
     } else {
       this.checkItems();
     }
+    this.updateStorage();
   }
 
   getStorageItem(key) {
