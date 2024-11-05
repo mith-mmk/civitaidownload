@@ -18,6 +18,7 @@ class DownloadEditor {
         this.setStorageItem('download', '');
       }
     }
+    this.elmlists = null;
   }
 
 
@@ -195,7 +196,7 @@ class DownloadEditor {
       }
       const array = Object.keys(storagedata).map((key) => storagedata[key]);
       array.forEach((item) => {
-        data += `cget '${item.url}' '${item.title || ''}' '${item.category || ''}' '${item.series || ''}'\n`;
+        data += `cget ${item.url} ${item.title || ''} ${item.category || ''} ${item.series || ''}\n`;
       });
       const blob = new Blob([data], {type: 'text/plain'});
       const url = URL.createObjectURL(blob);
@@ -252,7 +253,8 @@ class DownloadEditor {
     }
     const urls = Object.keys(storagedata);
     const array = Object.keys(storagedata).map((key) => storagedata[key]);
-    const lists = document.querySelectorAll('.title .download');
+    const lists = this.elmlists || document.querySelectorAll('.title .download');
+    this.elmlists = lists;
     lists.forEach((list) => {
       if (urls.includes(list.href)) {
         const checkElm = document.createElement('span');
@@ -307,7 +309,7 @@ class DownloadEditor {
       return;
     }
     this.appendProperty(storagedata[url], properties);
-    this.setStorageItem('download', storagedata);
+    this.setStorageItem('download', storagedata, true, false);
   }
 
   removeDownloadData(url) {
