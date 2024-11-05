@@ -28,8 +28,9 @@ class DownloadEditor {
       console.error('setStorageItem:', e);
       this.storage.setItem(key, '{}');
     }
-    this.remakeTbody(value);
-    this.setDownloadData(value);
+    const array = Object.keys(value).map((key) => value[key]);
+    this.remakeTbody(array);
+    this.setDownloadData(array);
   }
 
 
@@ -214,7 +215,8 @@ class DownloadEditor {
   createDowloadInput() {
     let data = '';
     const storagedata = this.storagedata;
-    storagedata.forEach((item) => {
+    const array = Object.keys(storagedata).map((key) => storagedata[key]);
+    array.forEach((item) => {
       data += `<span>cget ${item.url} '${item.title}' '${item.category}' '${item.series}'</span><br>\n`;
     });
     this.downText.innerHTML = data;
