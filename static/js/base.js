@@ -5,45 +5,33 @@ class DownloadEditor {
     const storage = window.localStorage;
     this.storage = storage;
     this.createToolBox(toolBox);
-    if (!this.storage.getItem('download')) {
-      this.setStorageItem('download', []);
+    const storagedata = this.storage.getItem('download');
+    if (!storagedata) {
+      this.setStorageItem('download', '');
+      this.storagedata = {};
     } else {
-      this.checkItems();
+      try {
+        this.storagedata = JSON.parse(storagedata);
+        this.checkItems();
+      } catch (e) {
+        console.error('storagedata:', e);
+        this.setStorageItem('download', '');
+      }
     }
   }
 
-  getStorageItem(key) {
-    try {
-      const item = this.storage.getItem(key);
-      console.log('storagedata:', item);
-      return JSON.parse(item);
-    } catch (e) {
-      console.error('getStorageItem:', e);
-      return [];
-    }
-  }
 
   setStorageItem(key, value) {
     try {
       this.storage.setItem(key, JSON.stringify(value));
     } catch (e) {
       console.error('setStorageItem:', e);
-      this.storage.setItem(key, '[]');
+      this.storage.setItem(key, '{}');
     }
     this.remakeTbody(value);
     this.setDownloadData(value);
   }
 
-  updateStorage() {
-    document.addEventListener('storage', (event) => {
-      console.log('Storage event fired:', event);
-      if (event.key === 'download') {
-        console.log('new storage:', event.newValue);
-        this.remakeTbody(event.newValue);
-        this.setDownloadData(event.newValue);
-      }
-    });
-  }
 
   clearTbody() {
     this.tbody.innerHTML = '';
@@ -100,7 +88,7 @@ class DownloadEditor {
     const tbody = document.createElement('tbody');
     toolTable.appendChild(tbody);
     this.tbody = tbody;
-    this.remakeTbody(this.getStorageItem('download'));
+    this.remakeTbody(this.storagedata);
     const inputTool = document.createElement('div');
     inputTool.className = 'input-tool';
     inputTool.style.display = 'flex';
@@ -131,7 +119,7 @@ class DownloadEditor {
     downloadButton.addEventListener('click', (event) => {
       console.log('clicked:', event.target);
       let data = '';
-      const storagedata = this.getStorageItem('download');
+      const storagedata = this.storagedata;
       if (!storagedata) {
         return;
       }
@@ -205,7 +193,7 @@ class DownloadEditor {
   }
 
   checkItems() {
-    const storagedata = this.setStorageItem('download');
+    const storagedata = this.storagedata;
     if (!storagedata) {
       return;
     }
@@ -225,7 +213,7 @@ class DownloadEditor {
 
   createDowloadInput() {
     let data = '';
-    const storagedata = this.getStorageItem('download');
+    const storagedata = this.storagedata;
     storagedata.forEach((item) => {
       data += `<span>cget ${item.url} '${item.title}' '${item.category}' '${item.series}'</span><br>\n`;
     });
@@ -259,23 +247,23 @@ class DownloadEditor {
       url
     };
     this.appendProperty(data, properties);
-    const storagedata = this.getStorageItem('download');
+    const storagedata = this.storagedata;
     if (!storagedata) {
-      this.setStorageItem('download', [data]);
+      this.storagedata = {};
+      this.storagedata[url] = data;
+      this.setStorageItem('download', this.storagedata);
     } else {
       // find url
-      const index = storagedata.findIndex((item) => item.url === url);
-      if (index !== -1) {
-        return;
+      if (!storagedata[url]) {
+        storagedata[url] = data;
+        this.setStorageItem('download', storagedata);
       }
-      storagedata.push(data);
-      this.setStorageItem('download', storagedata);
     }
   }
 
 
   upodateDownloadData(url, properties) {
-    const storagedata = this.getStorageItem('download');
+    const storagedata = this.storagedata;
     if (!storagedata) {
       return;
     }
@@ -283,15 +271,17 @@ class DownloadEditor {
       url
     };
     this.appendProperty(data, properties);
-    this.setStorageItem('download', storagedata.map((item) => item.url === url ? data : item));
+    storagedata[url] = data;
+    this.setStorageItem('download', storagedata);
   }
 
   removeDownloadData(url) {
-    const storagedata = this.getStorageItem('download');
+    const storagedata = this.storagedata;
     if (!storagedata) {
       return;
     }
-    this.setStorageItem('download', storagedata.filter((item) => item.url !== url));
+    delete storagedata[url];
+    this.setStorageItem('download', storagedata);
   }
 
   clearDownloadData() {
