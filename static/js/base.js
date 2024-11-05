@@ -31,6 +31,7 @@ class DownloadEditor {
   updateStorage() {
     document.addEventListener('storage', (event) => {
       if (event.key === 'download') {
+        console.log('storage:', event.newValue);
         this.remakeTbody(event.newValue);
         this.setDownloadData(event.newValue);
       }
@@ -47,9 +48,15 @@ class DownloadEditor {
     }
     this.clearTbody();
     storagedata.forEach((item) => {
+      const parts = [
+        item.url,
+        item.title,
+        item.category,
+        item.series
+      ];
       const tr = document.createElement('tr');
       this.tbody.appendChild(tr);
-      item.forEach((data) => {
+      parts.forEach((data) => {
         const td = document.createElement('td');
         td.innerText = data;
         tr.appendChild(td);
@@ -110,7 +117,7 @@ class DownloadEditor {
         return;
       }
       storagedata.forEach((item) => {
-        data += `cget '${item.join(' ')}'\n`;
+        data += `cget '${item.url}' '${item.title || ''}' '${item.category || ''}' '${item.series || ''}'\n`;
       });
       const blob = new Blob([data], {type: 'text/plain'});
       const url = URL.createObjectURL(blob);
@@ -153,7 +160,7 @@ class DownloadEditor {
   setDownloadData(data) {
     data.forEach((item) => {
       const span = document.createElement('span');
-      span.innerText = `cget ${item.join(' ')}\n'`;
+      span.innerText = `cget ${item.url} '${item.title}' '${item.category}' '${item.series}'`;
       this.downText.appendChild(span);
       this.downText.appendChild(document.createElement('br'));
     });
