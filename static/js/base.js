@@ -121,7 +121,7 @@ class DownloadEditor {
     const toolTr = document.createElement('tr');
     toolTable.appendChild(thead);
     thead.appendChild(toolTr);
-    const headers = ['URL', 'title', 'category', 'TITLE', 'SERIES'];
+    const headers = ['URL', 'title', 'category', 'TITLE', 'SERIES', 'ORIGIN'];
     headers.forEach((header) => {
       const th = document.createElement('th');
       th.innerText = header;
