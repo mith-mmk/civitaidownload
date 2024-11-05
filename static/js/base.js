@@ -169,8 +169,12 @@ class DownloadEditor {
         if (trimmed) {
           // eslint-disable-next-line no-unused-vars
           const [_, url, title, category, series] = trimmed.split(' ');
-          array.push({url, title, category, series});
-          storagedata[url] = {url, title, category, series};
+          if (!url) {
+            return;
+          }
+          const origin = this.storagedata[url].origin;
+          array.push({url, title, category, series, origin});
+          storagedata[url] = {url, title, category, series, origin};
         }
       });
       this.storagedata = storagedata;
@@ -297,14 +301,10 @@ class DownloadEditor {
   updateDownloadData(url, properties) {
     console.log('updateDownloadData:', url, properties);
     const storagedata = this.storagedata;
-    if (!storagedata) {
+    if (!storagedata || !storagedata[url]) {
       return;
     }
-    const data = {
-      url
-    };
-    this.appendProperty(data, properties);
-    storagedata[url] = data;
+    this.appendProperty(storagedata[url], properties);
     this.setStorageItem('download', storagedata);
   }
 
