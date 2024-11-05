@@ -69,6 +69,7 @@ class DownloadEditor {
       tr.appendChild(tdCategory);
       tr.appendChild(tdSeries);
       tr.appendChild(tdOrigin);
+      this.tbody.appendChild(tr);
     });
   }
 
@@ -166,9 +167,10 @@ class DownloadEditor {
   }
 
   setDownloadData(data) {
+    this.downText.innerHTML = '';
     data.forEach((item) => {
       const span = document.createElement('span');
-      span.innerText = `cget ${item.url} '${item.title}' '${item.category}' '${item.series}'`;
+      span.innerText = `cget ${item.url} ${item.title || ''} ${item.category || ''} ${item.series || ''}`;
       this.downText.appendChild(span);
       this.downText.appendChild(document.createElement('br'));
     });
