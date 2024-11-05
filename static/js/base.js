@@ -31,7 +31,7 @@ class DownloadEditor {
   updateStorage() {
     document.addEventListener('storage', (event) => {
       if (event.key === 'download') {
-        console.log('storage:', event.newValue);
+        console.log('new storage:', event.newValue);
         this.remakeTbody(event.newValue);
         this.setDownloadData(event.newValue);
       }
@@ -48,22 +48,31 @@ class DownloadEditor {
     }
     this.clearTbody();
     storagedata.forEach((item) => {
-      const parts = [
-        item.url,
-        item.title,
-        item.category,
-        item.series
-      ];
       const tr = document.createElement('tr');
-      this.tbody.appendChild(tr);
-      parts.forEach((data) => {
-        const td = document.createElement('td');
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = data;
-        td.appendChild(input);
-        tr.appendChild(td);
-      });
+      const tdUrl = document.createElement('td');
+      tdUrl.innerText = item.url;
+      const tdTitle = document.createElement('td');
+      const inputTitle = document.createElement('input');
+      inputTitle.type = 'text';
+      inputTitle.value = item.title || this.defaultTitle;
+      tdTitle.appendChild(inputTitle);
+      const tdCategory = document.createElement('td');
+      const inputCategory = document.createElement('input');
+      inputCategory.type = 'text';
+      inputCategory.value = item.category || this.defaultCategory;
+      tdCategory.appendChild(inputCategory);
+      const tdSeries = document.createElement('td');
+      const inputSeries = document.createElement('input');
+      inputSeries.type = 'text';
+      inputSeries.value = item.series || this.defaultSeries;
+      const tdOrigin = document.createElement('td');
+      tdOrigin.innerText = item.origin;
+      tdSeries.appendChild(inputSeries);
+      tr.appendChild(tdUrl);
+      tr.appendChild(tdTitle);
+      tr.appendChild(tdCategory);
+      tr.appendChild(tdSeries);
+      tr.appendChild(tdOrigin);
     });
   }
 
@@ -228,13 +237,20 @@ class DownloadEditor {
     this.setStorageItem('download', data);
   }
 
-  appendDownloadData(url, title='', category='', series='') {
+  appendProperty(data, properties) {
+    if (properties) {
+      Object.keys(properties).forEach((key) => {
+        data[key] = properties[key];
+      });
+    }
+    return data;
+  }
+
+  appendDownloadData(url, properties) {
     const data = {
-      url,
-      title,
-      category,
-      series
+      url
     };
+    this.appendProperty(data, properties);
     const storagedata = this.getStorageItem('download');
     if (!storagedata) {
       this.setStorageItem('download', [data]);
@@ -244,17 +260,16 @@ class DownloadEditor {
     }
   }
 
-  upodateDownloadData(url, title='', category='', series='') {
+
+  upodateDownloadData(url, properties) {
     const storagedata = this.getStorageItem('download');
     if (!storagedata) {
       return;
     }
     const data = {
-      url,
-      title,
-      category,
-      series
+      url
     };
+    this.appendProperty(data, properties);
     this.setStorageItem('download', storagedata.map((item) => item.url === url ? data : item));
   }
 
@@ -294,13 +309,16 @@ function itemsInit() {
       if (event.target.querySelector('.checked')) {
         const checkElm = event.target.querySelector('.checked');
         checkElm.remove();
-        downloadEditor.removeDownloadData(event.target.src);
+        const title = item.querySelector('.title');
+        const link = title.querySelector('a.download').href;
+        downloadEditor.removeDownloadData(link);
         return;
       }
       const checkElm = document.createElement('span');
       checkElm.className = 'checked';
       checkElm.innerText = '✔';
-      item.appendChild(checkElm);
+      const downloadElm = item.querySelector('.title .download');
+      downloadElm.appendChild(checkElm);
       console.log('clicked:', event.target.src);
       const title = item.querySelector('.title');
       console.log('title:', title.innerText);
@@ -310,7 +328,7 @@ function itemsInit() {
         console.log('clicked:', event.target);
         event.stopPropagation();
       });
-      downloadEditor.appendDownloadData(link, tilteText);
+      downloadEditor.appendDownloadData(link, {origin:tilteText});
     });
   });
 
