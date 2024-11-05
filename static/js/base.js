@@ -110,7 +110,7 @@ class DownloadEditor {
         return;
       }
       storagedata.forEach((item) => {
-        data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
+        data += `cget '${item.join(' ')}'\n`;
       });
       const blob = new Blob([data], {type: 'text/plain'});
       const url = URL.createObjectURL(blob);
@@ -153,7 +153,7 @@ class DownloadEditor {
   setDownloadData(data) {
     data.forEach((item) => {
       const span = document.createElement('span');
-      span.innerText = `cget ${item.url} '${item.title}' '${item.category}' '${item.series}\n'`;
+      span.innerText = `cget ${item.join(' ')}\n'`;
       this.downText.appendChild(span);
       this.downText.appendChild(document.createElement('br'));
     });
@@ -163,11 +163,15 @@ class DownloadEditor {
     const texts = downText.innerText.split('\n');
     const data = [];
     texts.forEach((text) => {
+      const item = {};
       if (text) {
         const parts = text.split(' ');
         if (parts[0] === 'cget') {
           parts.shift();
-          data.push(parts);
+          item.url = parts.shift();
+          item.title = parts.shift();
+          item.category = parts.shift();
+          item.series = parts.shift();
         }
       }
     });
@@ -196,8 +200,7 @@ class DownloadEditor {
     let data = '';
     const storagedata = this.getStorageItem('download');
     storagedata.forEach((item) => {
-      const text = item.map((text) => `'${text}'`).split(' ');
-      data += `<span>cget ${text}'</span><br>\n`;
+      data += `<span>cget ${item.url} '${item.title}' '${item.category}' '${item.series}'</span><br>\n`;
     });
     this.downText.innerHTML = data;
   }
@@ -216,12 +219,12 @@ class DownloadEditor {
   }
 
   appendDownloadData(url, title='', category='', series='') {
-    const data = [
+    const data = {
       url,
       title,
       category,
       series
-    ];
+    };
     const storagedata = this.getStorageItem('download');
     if (!storagedata) {
       this.setStorageItem('download', [data]);
@@ -236,12 +239,12 @@ class DownloadEditor {
     if (!storagedata) {
       return;
     }
-    const data = [
+    const data = {
       url,
       title,
       category,
       series
-    ];
+    };
     this.setStorageItem('download', storagedata.map((item) => item.url === url ? data : item));
   }
 
