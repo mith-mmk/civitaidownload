@@ -21,7 +21,7 @@ class DownloadEditor {
   }
 
 
-  setStorageItem(key, value) {
+  setStorageItem(key, value, rebuildText = true, rebuildTable = true) {
     try {
       this.storage.setItem(key, JSON.stringify(value));
     } catch (e) {
@@ -29,8 +29,12 @@ class DownloadEditor {
       this.storage.setItem(key, '{}');
     }
     const array = Object.keys(value).map((key) => value[key]);
-    this.remakeTbody(array);
-    this.setDownloadData(array);
+    if (rebuildTable) {
+      this.remakeTbody(array);
+    }
+    if (rebuildText) {
+      this.setDownloadData(array);
+    }
   }
 
 
@@ -155,7 +159,22 @@ class DownloadEditor {
     downText.contentEditable = true;
     downText.addEventListener('input', (event) => {
       console.log('input:', event.target);
-      this.setStorageItem('download', this.getDownloadData(event.target));
+      // parse text
+      const text = downText.innerText;
+      const lines = text.split('\n');
+      const storagedata = {};
+      const array = [];
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed) {
+          // eslint-disable-next-line no-unused-vars
+          const [_, url, title, category, series] = trimmed.split(' ');
+          array.push({url, title, category, series});
+          storagedata[url] = {url, title, category, series};
+        }
+      });
+      this.storagedata = storagedata;
+      this.setStorageItem('download', storagedata, false, true);
     });
     toolBox.appendChild(downText);
     const downloadButton = document.createElement('button');
@@ -237,18 +256,8 @@ class DownloadEditor {
         parent.appendChild(checkElm);
       }
     });
+    this.remakeTbody(array);
     this.setDownloadData(array);
-    this.createDowloadInput(array);
-  }
-
-  createDowloadInput() {
-    let data = '';
-    const storagedata = this.storagedata;
-    const array = Object.keys(storagedata).map((key) => storagedata[key]);
-    array.forEach((item) => {
-      data += `<span>cget ${item.url} '${item.title}' '${item.category}' '${item.series}'</span><br>\n`;
-    });
-    this.downText.innerHTML = data;
   }
 
 
