@@ -216,7 +216,7 @@ class DownloadEditor {
     if (!storagedata) {
       return;
     }
-    const urls = storagedata.map((item) => item.url);
+    const urls = Object.keys(storagedata);
 
     const lists = document.querySelectorAll('.title .download');
     lists.forEach((list) => {
