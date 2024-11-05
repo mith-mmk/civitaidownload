@@ -50,17 +50,29 @@ class DownloadEditor {
       const tdTitle = document.createElement('td');
       const inputTitle = document.createElement('input');
       inputTitle.type = 'text';
-      inputTitle.value = item.title || this.defaultTitle;
+      inputTitle.value = item.title || this.defaultTitle.value;
+      inputTitle.addEventListener('input', (event) => {
+        console.log('input:', event.target);
+        this.upodateDownloadData(item.url, {title: event.target.value});
+      });
       tdTitle.appendChild(inputTitle);
       const tdCategory = document.createElement('td');
       const inputCategory = document.createElement('input');
+      inputCategory.addEventListener('input', (event) => {
+        console.log('input:', event.target);
+        this.upodateDownloadData(item.url, {category: event.target.value});
+      });
       inputCategory.type = 'text';
-      inputCategory.value = item.category || this.defaultCategory;
+      inputCategory.value = item.category || this.defaultCategory.value;
+      inputCategory.addEventListener('input', (event) => {
+        console.log('input:', event.target);
+        this.upodateDownloadData(item.url, {category: event.target.value});
+      });
       tdCategory.appendChild(inputCategory);
       const tdSeries = document.createElement('td');
       const inputSeries = document.createElement('input');
       inputSeries.type = 'text';
-      inputSeries.value = item.series || this.defaultSeries;
+      inputSeries.value = item.series || this.defaultSeries.value;
       const tdOrigin = document.createElement('td');
       tdOrigin.innerText = item.origin;
       tdSeries.appendChild(inputSeries);
@@ -98,14 +110,17 @@ class DownloadEditor {
     const defaultTitle = document.createElement('input');
     defaultTitle.type = 'text';
     defaultTitle.value = '()-Lora';
+    this.defaultTitle = defaultTitle;
     inputTool.appendChild(defaultTitle);
     const defaultCategory = document.createElement('input');
     defaultCategory.type = 'text';
     defaultCategory.value = '';
+    this.defaultCategory = defaultCategory;
     inputTool.appendChild(defaultCategory);
     const defaultSeries = document.createElement('input');
     defaultSeries.type = 'text';
     defaultSeries.value = '';
+    this.defaultSeries = defaultSeries;
     inputTool.appendChild(defaultSeries);
     const downText = document.createElement('div');
     downText.className = 'down-text';
