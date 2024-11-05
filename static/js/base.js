@@ -51,28 +51,55 @@ class DownloadEditor {
       const inputTitle = document.createElement('input');
       inputTitle.type = 'text';
       inputTitle.value = item.title || this.defaultTitle.value;
-      inputTitle.addEventListener('change', (event) => {
-        console.log('input:', event.target);
-        this.upodateDownloadData(item.url, {title: event.target.value});
-      });
       tdTitle.appendChild(inputTitle);
       const tdCategory = document.createElement('td');
       const inputCategory = document.createElement('input');
-      inputCategory.addEventListener('change', (event) => {
-        console.log('input:', event.target);
-        this.upodateDownloadData(item.url, {category: event.target.value});
-      });
       inputCategory.type = 'text';
       inputCategory.value = item.category || this.defaultCategory.value;
-      inputCategory.addEventListener('change', (event) => {
-        console.log('input:', event.target);
-        this.upodateDownloadData(item.url, {category: event.target.value});
-      });
       tdCategory.appendChild(inputCategory);
       const tdSeries = document.createElement('td');
       const inputSeries = document.createElement('input');
       inputSeries.type = 'text';
       inputSeries.value = item.series || this.defaultSeries.value;
+      inputSeries.type = 'text';
+      inputSeries.value = item.series || this.defaultSeries.value;
+
+      inputTitle.addEventListener('change', (event) => {
+        console.log('input:', event.target);
+        const prop = {
+          title: inputTitle.value,
+          category: inputCategory.value,
+          series: inputSeries.value
+        };
+        this.updateDownloadData(item.url, prop);
+      });
+      inputCategory.addEventListener('change', (event) => {
+        console.log('input:', event.target);
+        const prop = {
+          title: inputTitle.value,
+          category: inputCategory.value,
+          series: inputSeries.value
+        };
+        this.updateDownloadData(item.url, prop);
+      });
+      inputCategory.addEventListener('change', (event) => {
+        console.log('input:', event.target);
+        const prop = {
+          title: inputTitle.value,
+          category: inputCategory.value,
+          series: inputSeries.value
+        };
+        this.updateDownloadData(item.url, prop);
+      });
+      inputSeries.addEventListener('change', (event) => {
+        console.log('input:', event.target);
+        const prop = {
+          title: inputTitle.value,
+          category: inputCategory.value,
+          series: inputSeries.value
+        };
+        this.updateDownloadData(item.url, prop);
+      });
       const tdOrigin = document.createElement('td');
       tdOrigin.innerText = item.origin;
       tdSeries.appendChild(inputSeries);
@@ -284,7 +311,8 @@ class DownloadEditor {
   }
 
 
-  upodateDownloadData(url, properties) {
+  updateDownloadData(url, properties) {
+    console.log('updateDownloadData:', url, properties);
     const storagedata = this.storagedata;
     if (!storagedata) {
       return;
