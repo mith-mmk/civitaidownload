@@ -30,6 +30,8 @@ class DownloadEditor {
       console.error('setStorageItem:', e);
       this.storage.setItem(key, '[]');
     }
+    this.remakeTbody(value);
+    this.setDownloadData(value);
   }
 
   updateStorage() {
@@ -308,7 +310,7 @@ class DownloadEditor {
 function itemsInit() {
   const toolBox = document.querySelector('.tool-box');
   const downloadEditor = new DownloadEditor(toolBox);
-  downloadEditor.updateStorage();
+  // downloadEditor.updateStorage();
   const items = document.querySelectorAll('.item');
   items.forEach((item) => {
     item.addEventListener('click', (event) => {
