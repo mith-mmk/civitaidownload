@@ -25,7 +25,11 @@ class DownloadEditor {
   }
 
   setStorageItem(key, value) {
-    this.storage.setItem(key, JSON.stringify(value));
+    try {
+      this.storage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.error('setStorageItem:', e);
+    }
   }
 
   updateStorage() {
@@ -211,7 +215,8 @@ class DownloadEditor {
         const checkElm = document.createElement('span');
         checkElm.className = 'checked';
         checkElm.innerText = '✔';
-        list.appendChild(checkElm);
+        const parent = list.parentElement;
+        parent.appendChild(checkElm);
       }
     });
   }
@@ -318,10 +323,9 @@ function itemsInit() {
       const checkElm = document.createElement('span');
       checkElm.className = 'checked';
       checkElm.innerText = '✔';
-      const downloadElm = item.querySelector('.title .download');
-      downloadElm.appendChild(checkElm);
       console.log('clicked:', event.target.src);
       const title = item.querySelector('.title');
+      title.appendChild(checkElm);
       console.log('title:', title.innerText);
       const link = title.querySelector('a.download').href;
       const tilteText = title.innerText;
