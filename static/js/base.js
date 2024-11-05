@@ -2,20 +2,19 @@
 
 class DownloadEditor {
   constructor(toolBox) {
-    this.stragedata = [];
     const storage = window.localStorage;
     this.storage = storage;
-    this.stragedata = storage.getItem('download');
+    const storagedata = storage.getItem('download');
     this.createToolBox(toolBox);
-    if (!this.stragedata) {
-      storage.setItem('download', this.stragedata);
+    if (!storagedata) {
+      storage.setItem('download', []);
     } else {
       this.checkItems();
     }
   }
 
-  updateStrage() {
-    document.addEventListener('strage', (event) => {
+  updateStorage() {
+    document.addEventListener('storage', (event) => {
       if (event.key === 'download') {
         this.remakeTbody(event.newValue);
         this.setDownloadData(event.newValue);
@@ -91,9 +90,12 @@ class DownloadEditor {
     downloadButton.addEventListener('click', (event) => {
       console.log('clicked:', event.target);
       let data = '';
-      this.stragedata.forEach((item) => {
-        data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
-      });
+      const storagedata = this.storage.getItem('download');
+      if (!storagedata) {
+        storagedata.forEach((item) => {
+          data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
+        });
+      }
       const blob = new Blob([data], {type: 'text/plain'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -206,24 +208,35 @@ class DownloadEditor {
       category,
       series
     ];
-    this.stragedata.push(data);
-    this.storage.setItem('download', this.stragedata);
+    const storagedata = this.storage.getItem('download');
+    if (!storagedata) {
+      this.storage.setItem('download', [data]);
+    } else {
+      storagedata.push(data);
+      this.storage.setItem('download', storagedata);
+    }
   }
 
   upodateDownloadData(url, title='', category='', series='') {
+    const storagedata = this.storage.getItem('download');
+    if (!storagedata) {
+      return;
+    }
     const data = [
       url,
       title,
       category,
       series
     ];
-    this.stragedata = this.stragedata.map((item) => item.url === url ? data : item);
-    this.storage.setItem('download', this.stragedata);
+    this.storage.setItem('download', storagedata.map((item) => item.url === url ? data : item));
   }
 
   removeDownloadData(url) {
-    this.stragedata = this.stragedata.filter((item) => item.url !== url);
-    this.storage.setItem('download', this.stragedata);
+    const storagedata = this.storage.getItem('download');
+    if (!storagedata) {
+      return;
+    }
+    this.storage.setItem('download', storagedata.filter((item) => item.url !== url));
   }
 
   clearDownloadData() {
