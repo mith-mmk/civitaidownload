@@ -58,7 +58,10 @@ class DownloadEditor {
       this.tbody.appendChild(tr);
       parts.forEach((data) => {
         const td = document.createElement('td');
-        td.innerText = data;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = data;
+        td.appendChild(input);
         tr.appendChild(td);
       });
     });
