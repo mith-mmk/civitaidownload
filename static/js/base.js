@@ -179,6 +179,8 @@ class DownloadEditor {
       });
       this.storagedata = storagedata;
       this.setStorageItem('download', storagedata, false, true);
+      this.clearCheck();
+      this.checkItems();
     });
     toolBox.appendChild(downText);
     const downloadButton = document.createElement('button');
@@ -317,9 +319,7 @@ class DownloadEditor {
     this.setStorageItem('download', storagedata);
   }
 
-  clearDownloadData() {
-    this.downText.innerHTML = '';
-    // search checked
+  clearCheck() {
     const titles = document.querySelectorAll('.title');
     titles.forEach((title) => {
       const checkElm = title.querySelector('.checked');
@@ -327,6 +327,10 @@ class DownloadEditor {
         checkElm.remove();
       }
     });
+  }
+  clearDownloadData() {
+    this.downText.innerHTML = '';
+    this.clearCheck();
     // clear webstorage
     this.setStorageItem('download', {});
     this.storage.clear();
