@@ -14,8 +14,12 @@ class DownloadEditor {
   }
 
   getStorageItem(key) {
-    const item = this.storage.getItem(key);
-    return JSON.parse(item);
+    try {
+      const item = this.storage.getItem(key);
+      return JSON.parse(item);
+    } catch (e) {
+      return null;
+    }
   }
 
   setStorageItem(key, value) {
