@@ -263,6 +263,11 @@ class DownloadEditor {
     if (!storagedata) {
       this.setStorageItem('download', [data]);
     } else {
+      // find url
+      const index = storagedata.findIndex((item) => item.url === url);
+      if (index !== -1) {
+        return;
+      }
       storagedata.push(data);
       this.setStorageItem('download', storagedata);
     }
