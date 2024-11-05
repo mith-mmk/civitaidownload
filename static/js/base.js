@@ -51,20 +51,20 @@ class DownloadEditor {
       const inputTitle = document.createElement('input');
       inputTitle.type = 'text';
       inputTitle.value = item.title || this.defaultTitle.value;
-      inputTitle.addEventListener('input', (event) => {
+      inputTitle.addEventListener('change', (event) => {
         console.log('input:', event.target);
         this.upodateDownloadData(item.url, {title: event.target.value});
       });
       tdTitle.appendChild(inputTitle);
       const tdCategory = document.createElement('td');
       const inputCategory = document.createElement('input');
-      inputCategory.addEventListener('input', (event) => {
+      inputCategory.addEventListener('change', (event) => {
         console.log('input:', event.target);
         this.upodateDownloadData(item.url, {category: event.target.value});
       });
       inputCategory.type = 'text';
       inputCategory.value = item.category || this.defaultCategory.value;
-      inputCategory.addEventListener('input', (event) => {
+      inputCategory.addEventListener('change', (event) => {
         console.log('input:', event.target);
         this.upodateDownloadData(item.url, {category: event.target.value});
       });
@@ -217,10 +217,10 @@ class DownloadEditor {
       return;
     }
     const urls = Object.keys(storagedata);
-
+    const array = Object.keys(storagedata).map((key) => storagedata[key]);
     const lists = document.querySelectorAll('.title .download');
     lists.forEach((list) => {
-      if (urls.includes(list.innerText)) {
+      if (urls.includes(list.href)) {
         const checkElm = document.createElement('span');
         checkElm.className = 'checked';
         checkElm.innerText = '✔';
@@ -228,6 +228,8 @@ class DownloadEditor {
         parent.appendChild(checkElm);
       }
     });
+    this.setDownloadData(array);
+    this.createDowloadInput();
   }
 
   createDowloadInput() {
@@ -315,8 +317,9 @@ class DownloadEditor {
       }
     });
     // clear webstorage
-    this.setStorageItem('download', []);
+    this.setStorageItem('download', {});
     this.storage.clear();
+    this.storagedata = {};
   }
 }
 
@@ -338,20 +341,20 @@ function itemsInit() {
         downloadEditor.removeDownloadData(link);
         return;
       }
-      const checkElm = document.createElement('span');
-      checkElm.className = 'checked';
-      checkElm.innerText = '✔';
-      console.log('clicked:', event.target.src);
       const title = item.querySelector('.title');
-      title.appendChild(checkElm);
       console.log('title:', title.innerText);
       const link = title.querySelector('a.download').href;
       const tilteText = title.innerText;
+      console.log('clicked:', event.target.src);
       title.addEventListener('click', (event) => {
         console.log('clicked:', event.target);
         event.stopPropagation();
       });
       downloadEditor.appendDownloadData(link, {origin:tilteText});
+      const checkElm = document.createElement('span');
+      checkElm.className = 'checked';
+      checkElm.innerText = '✔';
+      title.appendChild(checkElm);
     });
   });
 
