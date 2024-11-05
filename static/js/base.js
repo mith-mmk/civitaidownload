@@ -10,7 +10,6 @@ class DownloadEditor {
     } else {
       this.checkItems();
     }
-    this.updateStorage();
   }
 
   getStorageItem(key) {
@@ -309,6 +308,7 @@ class DownloadEditor {
 function itemsInit() {
   const toolBox = document.querySelector('.tool-box');
   const downloadEditor = new DownloadEditor(toolBox);
+  downloadEditor.updateStorage();
   const items = document.querySelectorAll('.item');
   items.forEach((item) => {
     item.addEventListener('click', (event) => {
