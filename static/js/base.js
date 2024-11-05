@@ -257,7 +257,11 @@ class DownloadEditor {
       Object.keys(properties).forEach((key) => {
         data[key] = properties[key];
       });
+      // default keys
     }
+    data.title = data.title || this.defaultTitle.value;
+    data.category = data.category || this.defaultCategory.value;
+    data.series = data.series || this.defaultSeries.value;
     return data;
   }
 
