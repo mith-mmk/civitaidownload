@@ -18,7 +18,6 @@ class DownloadEditor {
         this.setStorageItem('download', '');
       }
     }
-    this.elmlists = null;
   }
 
 
@@ -253,8 +252,7 @@ class DownloadEditor {
     }
     const urls = Object.keys(storagedata);
     const array = Object.keys(storagedata).map((key) => storagedata[key]);
-    const lists = this.elmlists || document.querySelectorAll('.title .download');
-    this.elmlists = lists;
+    const lists = document.querySelectorAll('.title .download');
     lists.forEach((list) => {
       if (urls.includes(list.href)) {
         const checkElm = document.createElement('span');
