@@ -4,13 +4,21 @@ class DownloadEditor {
   constructor(toolBox) {
     const storage = window.localStorage;
     this.storage = storage;
-    const storagedata = storage.getItem('download');
     this.createToolBox(toolBox);
-    if (!storagedata) {
-      storage.setItem('download', []);
+    if (!this.storage.getItem('download')) {
+      this.setStorageItem('download', []);
     } else {
       this.checkItems();
     }
+  }
+
+  getStorageItem(key) {
+    const item = this.storage.getItem(key);
+    return JSON.parse(item);
+  }
+
+  setStorageItem(key, value) {
+    this.storage.setItem(key, JSON.stringify(value));
   }
 
   updateStorage() {
@@ -59,7 +67,7 @@ class DownloadEditor {
     const tbody = document.createElement('tbody');
     toolTable.appendChild(tbody);
     this.tbody = tbody;
-    this.remakeTbody(this.storage.getItem('download'));
+    this.remakeTbody(this.getStorageItem('download'));
     const inputTool = document.createElement('div');
     inputTool.className = 'input-tool';
     inputTool.style.display = 'flex';
@@ -81,7 +89,7 @@ class DownloadEditor {
     downText.contentEditable = true;
     downText.addEventListener('input', (event) => {
       console.log('input:', event.target);
-      this.storage.setItem('download', this.getDownloadData(event.target));
+      this.setStorageItem('download', this.getDownloadData(event.target));
     });
     toolBox.appendChild(downText);
     const downloadButton = document.createElement('button');
@@ -90,7 +98,7 @@ class DownloadEditor {
     downloadButton.addEventListener('click', (event) => {
       console.log('clicked:', event.target);
       let data = '';
-      const storagedata = this.storage.getItem('download');
+      const storagedata = this.getStorageItem('download');
       if (!storagedata) {
         storagedata.forEach((item) => {
           data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
@@ -158,15 +166,13 @@ class DownloadEditor {
     return data;
   }
 
-  checkItems(downText) {
-    const texts = downText.innerText.split('\n');
-    const urls = [];
-    texts.forEach((text) => {
-      if (text) {
-        const parts = text.split(' ');
-        urls.push(parts[1]);
-      }
-    });
+  checkItems() {
+    const storagedata = this.setStorageItem('download');
+    if (!storagedata) {
+      return;
+    }
+    const urls = storagedata.map((item) => item.url);
+
     const lists = document.querySelectorAll('.title .download');
     lists.forEach((list) => {
       if (urls.includes(list.innerText)) {
@@ -180,7 +186,7 @@ class DownloadEditor {
 
   createDowloadInput() {
     let data = '';
-    const storagedata = this.storage.getItem('download');
+    const storagedata = this.getStorageItem('download');
     storagedata.forEach((item) => {
       const text = item.map((text) => `'${text}'`).split(' ');
       data += `<span>cget ${text}'</span><br>\n`;
@@ -198,7 +204,7 @@ class DownloadEditor {
         data.push(parts);
       }
     });
-    this.storage.setItem('download', data);
+    this.setStorageItem('download', data);
   }
 
   appendDownloadData(url, title='', category='', series='') {
@@ -208,17 +214,17 @@ class DownloadEditor {
       category,
       series
     ];
-    const storagedata = this.storage.getItem('download');
+    const storagedata = this.getStorageItem('download');
     if (!storagedata) {
-      this.storage.setItem('download', [data]);
+      this.setStorageItem('download', [data]);
     } else {
       storagedata.push(data);
-      this.storage.setItem('download', storagedata);
+      this.setStorageItem('download', storagedata);
     }
   }
 
   upodateDownloadData(url, title='', category='', series='') {
-    const storagedata = this.storage.getItem('download');
+    const storagedata = this.getStorageItem('download');
     if (!storagedata) {
       return;
     }
@@ -228,15 +234,15 @@ class DownloadEditor {
       category,
       series
     ];
-    this.storage.setItem('download', storagedata.map((item) => item.url === url ? data : item));
+    this.setStorageItem('download', storagedata.map((item) => item.url === url ? data : item));
   }
 
   removeDownloadData(url) {
-    const storagedata = this.storage.getItem('download');
+    const storagedata = this.getStorageItem('download');
     if (!storagedata) {
       return;
     }
-    this.storage.setItem('download', storagedata.filter((item) => item.url !== url));
+    this.setStorageItem('download', storagedata.filter((item) => item.url !== url));
   }
 
   clearDownloadData() {
@@ -250,7 +256,7 @@ class DownloadEditor {
       }
     });
     // clear webstorage
-    this.storage.setItem('download', []);
+    this.setStorageItem('download', []);
     this.storage.clear();
   }
 }
