@@ -20,7 +20,7 @@ class DownloadEditor {
       return JSON.parse(item);
     } catch (e) {
       console.error('getStorageItem:', e);
-      return null;
+      return [];
     }
   }
 
@@ -29,6 +29,7 @@ class DownloadEditor {
       this.storage.setItem(key, JSON.stringify(value));
     } catch (e) {
       console.error('setStorageItem:', e);
+      this.storage.setItem(key, '[]');
     }
   }
 
