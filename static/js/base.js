@@ -105,10 +105,12 @@ class DownloadEditor {
       let data = '';
       const storagedata = this.getStorageItem('download');
       if (!storagedata) {
-        storagedata.forEach((item) => {
-          data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
-        });
+        return;
       }
+      console.log('storagedata:', storagedata);
+      storagedata.forEach((item) => {
+        data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
+      });
       const blob = new Blob([data], {type: 'text/plain'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
