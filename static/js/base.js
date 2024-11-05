@@ -63,6 +63,7 @@ class DownloadEditor {
       inputSeries.value = item.series || this.defaultSeries.value;
       inputSeries.type = 'text';
       inputSeries.value = item.series || this.defaultSeries.value;
+      tdSeries.appendChild(inputSeries);
 
       inputTitle.addEventListener('change', (event) => {
         console.log('input:', event.target);
@@ -100,9 +101,9 @@ class DownloadEditor {
         };
         this.updateDownloadData(item.url, prop);
       });
+
       const tdOrigin = document.createElement('td');
       tdOrigin.innerText = item.origin;
-      tdSeries.appendChild(inputSeries);
       tr.appendChild(tdUrl);
       tr.appendChild(tdTitle);
       tr.appendChild(tdCategory);
@@ -219,25 +220,6 @@ class DownloadEditor {
     });
   }
 
-  getDownloadData(downText) {
-    const texts = downText.innerText.split('\n');
-    const data = [];
-    texts.forEach((text) => {
-      const item = {};
-      if (text) {
-        const parts = text.split(' ');
-        if (parts[0] === 'cget') {
-          parts.shift();
-          item.url = parts.shift();
-          item.title = parts.shift();
-          item.category = parts.shift();
-          item.series = parts.shift();
-        }
-      }
-    });
-    return data;
-  }
-
   checkItems() {
     const storagedata = this.storagedata;
     if (!storagedata) {
@@ -256,7 +238,7 @@ class DownloadEditor {
       }
     });
     this.setDownloadData(array);
-    this.createDowloadInput();
+    this.createDowloadInput(array);
   }
 
   createDowloadInput() {
@@ -269,18 +251,6 @@ class DownloadEditor {
     this.downText.innerHTML = data;
   }
 
-  updateInput() {
-    const text = this.downText.innerText;
-    const lines = text.split('\n');
-    const data = [];
-    lines.forEach((line) => {
-      if (line) {
-        const parts = line.split(' ').slice(1);
-        data.push(parts);
-      }
-    });
-    this.setStorageItem('download', data);
-  }
 
   appendProperty(data, properties) {
     if (properties) {
