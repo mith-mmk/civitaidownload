@@ -16,8 +16,10 @@ class DownloadEditor {
   getStorageItem(key) {
     try {
       const item = this.storage.getItem(key);
+      console.log('storagedata:', item);
       return JSON.parse(item);
     } catch (e) {
+      console.error('getStorageItem:', e);
       return null;
     }
   }
@@ -107,7 +109,6 @@ class DownloadEditor {
       if (!storagedata) {
         return;
       }
-      console.log('storagedata:', storagedata);
       storagedata.forEach((item) => {
         data += `cget ${item.url} '${item?.title}' '${item?.category}' '${item?.series}'\n`;
       });
