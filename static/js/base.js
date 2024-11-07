@@ -157,6 +157,8 @@ class DownloadEditor {
     const downText = document.createElement('div');
     downText.className = 'down-text';
     downText.contentEditable = true;
+
+
     downText.addEventListener('input', (event) => {
       console.log('input:', event.target);
       // parse text
@@ -180,7 +182,7 @@ class DownloadEditor {
       this.storagedata = storagedata;
       this.setStorageItem('download', storagedata, false, true);
       this.clearCheck();
-      this.checkItems();
+      this.checkItems(false, true);
     });
     toolBox.appendChild(downText);
     const downloadButton = document.createElement('button');
@@ -245,7 +247,7 @@ class DownloadEditor {
     });
   }
 
-  checkItems() {
+  checkItems(rebuildText = true, rebuildTable = true) {
     const storagedata = this.storagedata;
     if (!storagedata) {
       return;
@@ -262,8 +264,12 @@ class DownloadEditor {
         parent.appendChild(checkElm);
       }
     });
-    this.remakeTbody(array);
-    this.setDownloadData(array);
+    if (rebuildTable) {
+      this.remakeTbody(array);
+    }
+    if (rebuildText) {
+      this.setDownloadData(array);
+    }
   }
 
 
