@@ -20,8 +20,9 @@ function calcHash(file) {
       stream.on('end', () => {
         console.log(`read end ${file}`);
         const filebase = path.basename(file);
-        console.log(`filebase: ${filebase} hash: ${hash.digest('hex')}`);
-        const hash8 = hash.digest('hex').slice(0, 10);
+        const fullHash = hash.digest('hex');
+        console.log(`filebase: ${filebase} hash: ${fullHash.digest('hex')}`);
+        const hash8 = fullHash.slice(0, 10);
         const json = {
           hash: hash8,
           filename: filebase

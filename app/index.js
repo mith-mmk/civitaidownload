@@ -71,7 +71,7 @@ async function promiseWatcher(promise, functionName, opt, taskId) {
     console.error('promiseWatcher error:', err);
     tasks[taskId].status = 'error';
     tasks[taskId].error = err;
-  }).finary(() => {
+  }).finally(() => {
     tasks[taskId].isDone = true;
     tasks[taskId].endTime = new Date();
     this.taskCount--;

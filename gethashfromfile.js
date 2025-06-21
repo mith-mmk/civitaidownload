@@ -137,10 +137,10 @@ async function main() {
       return;
     }
     console.log(`new files found ${newfiles.length}`);
-    await createHashFromFiles(newfiles), {
+    await createHashFromFiles(newfiles, {
       hashList: prejson,
       fileList: prefiles
-    };
+    });
   } else {
     console.log(`file not found ${path}`);
   }
