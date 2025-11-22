@@ -656,7 +656,7 @@ function createHtmlFromItems(items) {
       const url = modelVersion.downloadUrl;
       const trainedWords = modelVersion.trainedWords || [];
       html += `
-            <div class="other-version" style="display:none">
+            <div class="other-version" style="display:none" data-name="${name}">
               <details>
               <summary>Model Version ${name}</summary>
               <div class="more-inner">
@@ -687,6 +687,9 @@ async function createHtml(opt) {
   const cssbase = opt.cssbase || 'base.css';
   const jsbase = opt.jsbase || 'base.js';
   const items = result.items;
+  if (items.length == 0) {
+    return ''
+  } 
   const htmlHeader = `
   <DOCTYPE html>
   <html>

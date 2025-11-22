@@ -18,11 +18,13 @@ async function run() {
     opt.apiKey = config.apiKey;
   }
   const html = await civitai.createHtml(opt);
-  const filebase = opt.filename || opt.query || opt?.tag?.join('-') || 'models';
-  console.log(`filebase: ${filebase}`);
-  const filename = path.join(outputDir, `${filebase}.html`);
-  console.log(`write to ${filename}`);
-  fs.writeFileSync(filename, html, 'utf8');
+  if (html != '') {
+    const filebase = opt.filename || opt.query || opt?.tag?.join('-') || 'models';
+    console.log(`filebase: ${filebase}`);
+    const filename = path.join(outputDir, `${filebase}.html`);
+    console.log(`write to ${filename}`);
+    fs.writeFileSync(filename, html, 'utf8');
+  }
 }
 
 function argMapper(args) {
