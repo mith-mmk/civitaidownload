@@ -688,8 +688,8 @@ async function createHtml(opt) {
   const jsbase = opt.jsbase || 'base.js';
   const items = result.items;
   if (items.length == 0) {
-    return ''
-  } 
+    return '';
+  }
   const htmlHeader = `
   <DOCTYPE html>
   <html>
