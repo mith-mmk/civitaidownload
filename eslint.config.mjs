@@ -3,18 +3,19 @@ import pluginJs from '@eslint/js';
 
 export default [
   {
+    files: ['**/*.js'],
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.commonjs,
         ...globals.es2022,
-        ...globals.node
+        ...globals.node,
+        ...globals.jest
       },
       parserOptions: {
         ecmaVersion: 2022
       }
-    },
-    files: ['js/*.js']
+    }
   },
   pluginJs.configs.recommended,
   {

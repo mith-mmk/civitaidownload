@@ -1,4 +1,3 @@
-/* globals require, process, console */
 const fs = require('fs');
 const path = require('path');
 const config = require('./configs/config.json');

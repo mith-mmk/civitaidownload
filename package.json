@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node app",
-    "test": "jest"
+    "test": "npx jest"
   },
   "author": "",
   "license": "MIT",

@@ -1,5 +1,3 @@
-/* global document, console, Blob, URL, window */
-
 class DownloadEditor {
   constructor(toolBox) {
     const storage = window.localStorage;

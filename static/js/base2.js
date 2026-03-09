@@ -1,4 +1,3 @@
-/* global document, console, Blob, URL, window */
 // old script
 // webstorage
 const storage = window.localStorage;

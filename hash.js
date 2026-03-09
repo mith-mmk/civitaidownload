@@ -1,5 +1,4 @@
 
-/* globals console, require, fetch */
 const fs = require('fs');
 const url = 'http://localhost:7860/sdapi/v1/sd-models';
 const jsonfile = 'f:/ai/models/model-hash.json';
